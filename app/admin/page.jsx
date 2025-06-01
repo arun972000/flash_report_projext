@@ -1,10 +1,13 @@
+
+
 export const dynamic = "force-dynamic";
 import React from 'react'
-import SegmentEditor from '../admin/components/TextEditor'
+import AdminPage from './AdminComponent';
+
 
 const page = () => {
     return (
-        <SegmentEditor />
+        <AdminPage />
     )
 }
 

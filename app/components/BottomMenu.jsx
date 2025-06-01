@@ -1,14 +1,19 @@
 'use client'
 
-// components/BottomMenuBar.js
-
 import Link from 'next/link'
-import { FaMotorcycle, FaTruckPickup, FaCarSide, FaTractor } from 'react-icons/fa'
+import { FaMotorcycle, FaTruckPickup, FaCarSide, FaTractor, FaHome } from 'react-icons/fa'
 import { MdOutlineBikeScooter } from 'react-icons/md'
 
 const BottomMenuBar = () => (
   <>
     <nav className="bottom-menu">
+      <Link href="/" aria-label="Home" className="menu-item">
+        <div className="icon-wrapper">
+          <FaHome size={24} />
+          <span className="label">Home</span>
+        </div>
+      </Link>
+
       <Link href="/two-wheeler" aria-label="Two Wheeler" className="menu-item">
         <div className="icon-wrapper">
           <FaMotorcycle size={24} />
@@ -23,14 +28,14 @@ const BottomMenuBar = () => (
         </div>
       </Link>
 
-      <Link href="/car" aria-label="Passenger Vehicle" className="menu-item">
+      <Link href="/passenger-vehicle" aria-label="Passenger Vehicle" className="menu-item">
         <div className="icon-wrapper">
           <FaCarSide size={24} />
           <span className="label">PV</span>
         </div>
       </Link>
 
-      <Link href="/truck" aria-label="Commercial Vehicle" className="menu-item">
+      <Link href="/commercial-vehicle" aria-label="Commercial Vehicle" className="menu-item">
         <div className="icon-wrapper">
           <FaTruckPickup size={24} />
           <span className="label">CV</span>

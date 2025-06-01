@@ -57,8 +57,8 @@ const Highlights = () => {
   {[
     { label: 'Two-Wheelers (2W)', key: 'highlighted_twowheeler' },
     { label: 'Three-Wheelers (3W)', key: 'highlighted_threewheeler' },
-    { label: 'Passenger Vehicles (PV)', key: 'highlighted_passengervehicle' },
-    { label: 'Commercial Vehicles (CV)', key: 'highlighted_commercialvehicle' },
+    { label: 'Passenger Vehicles (PV)', key: 'highlighted_passenger_vehicle' },
+    { label: 'Commercial Vehicles (CV)', key: 'highlighted_commercial_vehicle' },
     { label: 'Tractors', key: 'highlighted_tractor' },
   ].map(({ label, key }) => (
     <li

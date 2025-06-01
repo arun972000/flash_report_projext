@@ -13,6 +13,9 @@ import {
   LabelList,
 } from 'recharts'
 
+// Custom formatter to add % symbol
+const formatPercent = (value) => `${value}%`
+
 const CommercialSegmentChart = () => {
   const [data, setData] = useState([])
 
@@ -44,22 +47,22 @@ const CommercialSegmentChart = () => {
         <BarChart
           layout="vertical"
           data={data}
-          barCategoryGap="30%"  // reduces overall bar height
+          barCategoryGap="30%"
           margin={{ top: 10, right: 50, left: 40, bottom: 10 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" />
+          <XAxis type="number" tickFormatter={formatPercent} />
           <YAxis dataKey="month" type="category" />
-          <Tooltip />
+          <Tooltip formatter={(value) => `${value}%`} />
           <Legend />
           <Bar dataKey="hcv" stackId="a" fill="#3ab8b4">
-            <LabelList dataKey="hcv" position="insideRight" fill="#fff" fontSize={12} />
+            <LabelList dataKey="hcv" position="insideRight" formatter={formatPercent} fill="#fff" fontSize={12} />
           </Bar>
           <Bar dataKey="mcv" stackId="a" fill="#81ea81">
-            <LabelList dataKey="mcv" position="insideRight" fill="#000" fontSize={12} />
+            <LabelList dataKey="mcv" position="insideRight" formatter={formatPercent} fill="#000" fontSize={12} />
           </Bar>
           <Bar dataKey="lcv" stackId="a" fill="#ffc658">
-            <LabelList dataKey="lcv" position="insideRight" fill="#000" fontSize={12} />
+            <LabelList dataKey="lcv" position="insideRight" formatter={formatPercent} fill="#000" fontSize={12} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

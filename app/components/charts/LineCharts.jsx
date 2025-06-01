@@ -168,7 +168,7 @@ const CustomLineChart = () => {
             }
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ marginTop: 24 }} />
+          <Legend wrapperStyle={{ marginTop: 24, marginLeft:20 }} />
 
           {(selectedCat === 'All' ? ['2W', '3W', 'PV', 'TRAC', 'CV', 'Total'] : [selectedCat]).map(key => (
             <Line

@@ -9,6 +9,19 @@
   color: green !important;
 }
 
+.custom-legend {
+  margin-top: 24px;
+  display: flex !important;
+  justify-content: flex-start !important; /* default left on desktop */
+}
+
+/* Center legend on mobile */
+@media (max-width: 767px) {
+  .custom-legend {
+    justify-content: center !important;
+  }
+}
+
 
 .shining-white {
   position: relative;

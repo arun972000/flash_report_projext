@@ -75,7 +75,14 @@ export default function ReportsFooter() {
           align-items: center;
           gap: 0.5rem;
           text-align: center;
+          margin-bottom: 0;
         }
+
+        @media (max-width: 575px) {
+    .app-footer {
+      margin-bottom: 65px; /* 50px bottom margin ONLY on mobile */
+    }
+  }
 
         .links {
           display: flex;
