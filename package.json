@@ -9,16 +9,34 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.821.0",
+    "@plaiceholder/next": "^3.0.0",
+    "aws-sdk": "^2.1692.0",
+    "axios": "^1.9.0",
+    "bootstrap": "^5.3.6",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.15.0",
+    "jwt-decode": "^4.0.0",
+    "mysql2": "^3.14.1",
+    "next": "14.2.12",
     "react": "^18",
+    "react-bootstrap": "^2.10.10",
     "react-dom": "^18",
-    "next": "14.2.12"
+    "react-icons": "^5.5.0",
+    "react-quill": "^2.0.0",
+    "react-responsive": "^10.0.1",
+    "react-to-print": "^3.1.0",
+    "react-toastify": "^11.0.5",
+    "recharts": "^2.15.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@types/bootstrap": "^5.2.10",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
-    "eslint-config-next": "14.2.12"
+    "eslint-config-next": "14.2.12",
+    "typescript": "^5"
   }
 }

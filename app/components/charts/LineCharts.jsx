@@ -1,0 +1,192 @@
+'use client';
+
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Brush,
+  Rectangle,
+} from 'recharts';
+import '../styles/chart.css';
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+
+  return (
+    <div style={{ background: '#333', color: '#fff', padding: 10, borderRadius: 5 }}>
+      <p>{label}</p>
+      {payload.map((entry, index) => (
+        <p key={index} style={{ color: entry.color }}>
+          {entry.name}: {entry.value?.toLocaleString()}
+        </p>
+      ))}
+    </div>
+  );
+};
+
+const categories = ['All', '2W', '3W', 'PV', 'TRAC', 'CV', 'Total'];
+const colors = {
+  '2W': '#ffff',
+  '3W': '#ff1f23',
+  PV: '#FFCE56',
+  TRAC: '#4BC0C0',
+  CV: '#9966FF',
+  Total: '#FF9F40',
+};
+
+const abbreviate = v => {
+  if (v >= 1e9) return `${(v / 1e9).toFixed(1).replace(/\.0$/, '')}B`;
+  if (v >= 1e6) return `${(v / 1e6).toFixed(1).replace(/\.0$/, '')}M`;
+  if (v >= 1e3) return `${(v / 1e3).toFixed(1).replace(/\.0$/, '')}K`;
+  return v.toString();
+};
+
+const CustomLineChart = () => {
+  const [selectedCat, setSelectedCat] = useState('All');
+  const [chartHeight, setChartHeight] = useState(420);
+  const [data, setData] = useState([]);
+  const chartWrapperRef = useRef(null);
+
+  // Handle responsiveness
+  useEffect(() => {
+    const updateHeight = () => {
+      const isMobile = window.innerWidth < 768;
+      setChartHeight(isMobile ? 280 : 420);
+    };
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
+
+  // Fetch and transform API data
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch('/api/overall');
+        const json = await res.json();
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        const transformed = json.map(item => {
+          const [year, month] = item.month.split('-');
+          const formattedMonth = `${monthNames[parseInt(month, 10) - 1]}${year.slice(2)}`;
+          return {
+            month: formattedMonth,
+            '2W': item['2-wheeler'],
+            '3W': item['3-wheeler'],
+            PV: item.passenger,
+            TRAC: item.tractor,
+            CV: item.cv,
+            Total: item.total,
+          };
+        });
+
+        setData(transformed);
+      } catch (err) {
+        console.error('Failed to fetch chart data:', err);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  const filteredData = useMemo(() => {
+    return data.map(d => ({ ...d, year: d.month }));
+  }, [data]);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', zIndex: 0 }} ref={chartWrapperRef}>
+      <div style={{ marginBottom: 16, textAlign: 'left' }}>
+        <select
+          value={selectedCat}
+          onChange={e => setSelectedCat(e.target.value)}
+          style={{ padding: '4px 8px', fontSize: 14 }}
+        >
+          {categories.map(cat => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+      </div>
+
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <LineChart
+          data={filteredData}
+          margin={{ top: 20, right: 20, bottom: 20, left: 0 }}
+          animationDuration={2500}
+          animationEasing="ease-out"
+        >
+          <defs>
+            {categories.filter(cat => cat !== 'All').map(cat => (
+              <linearGradient id={`${cat}-grad`} x1="0" y1="0" x2="0" y2="1" key={cat}>
+                <stop offset="0%" stopColor={colors[cat]} stopOpacity={0.9} />
+                <stop offset="100%" stopColor={colors[cat]} stopOpacity={0.3} />
+              </linearGradient>
+            ))}
+          </defs>
+
+          <CartesianGrid stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
+          <XAxis
+            dataKey="year"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
+          />
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
+            domain={['auto', 'auto']}
+            tickFormatter={abbreviate}
+            tickCount={5}
+            interval="preserveStartEnd"
+          />
+          <Brush
+            dataKey="year"
+            startIndex={0}
+            endIndex={filteredData.length - 1}
+            height={12}
+            stroke="rgba(255,255,255,0.4)"
+            fill="rgba(255,255,255,0.08)"
+            strokeWidth={1}
+            tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 9 }}
+            tickMargin={4}
+            traveller={
+              <Rectangle
+                width={6}
+                height={16}
+                radius={3}
+                fill="rgba(255,255,255,0.6)"
+                stroke="rgba(255,255,255,0.4)"
+                strokeWidth={1}
+                cursor="ew-resize"
+              />
+            }
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend wrapperStyle={{ marginTop: 24 }} />
+
+          {(selectedCat === 'All' ? ['2W', '3W', 'PV', 'TRAC', 'CV', 'Total'] : [selectedCat]).map(key => (
+            <Line
+              key={key}
+              type="linear"
+              dataKey={key}
+              name={key}
+              stroke={`url(#${key}-grad)`}
+              strokeWidth={3}
+              dot={{ r: 3 }}
+              connectNulls
+              animationBegin={0}
+            />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+export default CustomLineChart;
