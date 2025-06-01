@@ -4,6 +4,7 @@ import Header from './components/Header/Header'
 import FlashReportsHome from './components/home'
 import ReportsFooter from './components/Footer'
 import { Bricolage_Grotesque } from "next/font/google";
+import BottomMenuBar from './components/BottomMenu'
 
 const bricolage = Bricolage_Grotesque({
     subsets: ["latin"],
@@ -16,6 +17,7 @@ const page = () => {
             <Header />
             <FlashReportsHome />
             <OverAll />
+            <BottomMenuBar/>
             <ReportsFooter />
         </div>
 

@@ -152,8 +152,8 @@ const ThreewheelerForecast = () => {
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ marginTop: 24 }} />
           <Line
-            dataKey="CV"
-            name="CV"
+            dataKey="TRAC"
+            name="TRAC"
             stroke="url(#histGrad)"
             strokeWidth={3}
             connectNulls
