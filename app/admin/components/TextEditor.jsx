@@ -85,7 +85,7 @@ const SegmentEditor = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`);
+                const response = await axios.get(`/api/admin/flash-dynamic/flash-reports-text`);
                 setFormData(response.data || {});
                 const initialCounts = {};
                 Object.entries(response.data || {}).forEach(([key, html]) => {
@@ -153,7 +153,7 @@ const SegmentEditor = () => {
         if (mobileImageFile) formDataImage.append('mobile_banner', mobileImageFile);
 
         try {
-            const response = await axios.put(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-image`, formDataImage);
+            const response = await axios.put(`/api/admin/flash-dynamic/flash-image`, formDataImage);
             if (response.data.mainBannerUrl) {
                 setFormData((prev) => ({ ...prev, main_banner_url: response.data.mainBannerUrl }));
                 setImagePreview(response.data.mainBannerUrl.startsWith('http') ? response.data.mainBannerUrl : `${process.env.NEXT_PUBLIC_S3_BUCKET_URL}${response.data.mainBannerUrl}`);
@@ -177,7 +177,7 @@ const SegmentEditor = () => {
         try {
             const payload = { ...formData };
             delete payload.imageFile;
-            await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`, payload);
+            await axios.post(`/api/admin/flash-dynamic/flash-reports-text`, payload);
             toast.success('Update saved successfully');
         } catch (err) {
             toast.error(err.response?.data?.message || 'Error saving data');
