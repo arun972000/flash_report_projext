@@ -59,14 +59,14 @@ export async function GET() {
     const tableName = "tractor_ev";
     const today = new Date();
 
-    const currentMonthRaw = formatMonth(
-      new Date(today.getFullYear(), today.getMonth(), 1)
-    );
-    const previousMonthRaw = formatMonth(
+        const currentMonthRaw = formatMonth(
       new Date(today.getFullYear(), today.getMonth() - 1, 1)
     );
+    const previousMonthRaw = formatMonth(
+      new Date(today.getFullYear(), today.getMonth() - 2, 1)
+    );
     const lastYearMonthRaw = formatMonth(
-      new Date(today.getFullYear() - 1, today.getMonth(), 1)
+      new Date(today.getFullYear() - 1, today.getMonth() -1, 1)
     );
 
     const availableCols = await getAvailableColumns(tableName);

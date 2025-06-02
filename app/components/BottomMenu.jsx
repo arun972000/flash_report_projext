@@ -104,3 +104,4 @@ const BottomMenuBar = () => (
 )
 
 export default BottomMenuBar
+

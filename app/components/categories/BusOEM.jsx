@@ -32,12 +32,12 @@ const BusOEM = async () => {
                         <BusEV />
                     </div>
 
-                    {/* <div className="col-12">
+                    <div className="col-12">
                         <h2 className="mt-4">
                             Forecast Chart
                         </h2>
                         <BusForecast />
-                    </div> */}
+                    </div>
 
                     <div className="col-12">
                         <h2 className="mt-4">

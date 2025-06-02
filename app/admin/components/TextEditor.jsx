@@ -25,6 +25,7 @@ import TruckChartUpload from '../components/truck-overall/Truckoverall';
 import BusChartUpload from '../components/bus/Bus';
 import PassengerChartUpload from '../components/passenger/Passenger';
 import TractorChartUpload from '../components/tractoroverall/Tractor-overall';
+import Commercialsegment from "../components/commercial-segment/Commercialsegment"
 
 const SegmentLabel = {
     overall: 'Overall OEM',
@@ -208,7 +209,7 @@ const SegmentEditor = () => {
                         {selectedSegment === 'overall' && <><OverAllexcelUpload /><Overallbar /></>}
                         {selectedSegment === 'twowheeler' && <TwoWheelerChartUploads />}
                         {selectedSegment === 'threewheeler' && <ThreeWheelerChartUpload />}
-                        {selectedSegment === 'commercial_vehicle' && <CommercialChartUploads />}
+                        {selectedSegment === 'commercial_vehicle' && <><CommercialChartUploads /> <Commercialsegment/></>}
                         {selectedSegment === 'truck' && <TruckChartUpload />}
                         {selectedSegment === 'bus' && <BusChartUpload />}
                         {selectedSegment === 'passenger_vehicle' && <PassengerChartUpload />}

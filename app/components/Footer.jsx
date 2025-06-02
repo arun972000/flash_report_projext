@@ -16,15 +16,15 @@ export default function ReportsFooter() {
           © Copyright 2025 RACE EDITORIALE LLP – All Rights Reserved.
         </span>
         <nav className="links">
-          <Link href="/page/terms-conditions" legacyBehavior>
+          <Link href="https://raceautoindia.com/page/terms-conditions" legacyBehavior>
             <a className="footer-link">Terms & Conditions</a>
           </Link>
           <span className="separator">•</span>
-          <Link href="/page/privacy" legacyBehavior>
+          <Link href="https://raceautoindia.com/page/privacy" legacyBehavior>
             <a className="footer-link">Privacy Policy</a>
           </Link>
           <span className="separator">•</span>
-          <Link href="/page/contact" legacyBehavior>
+          <Link href="https://raceautoindia.com/page/contact" legacyBehavior>
             <a className="footer-link">Contact Us</a>
           </Link>
           <span className="separator">•</span>

@@ -32,12 +32,12 @@ const TruckOEM = async () => {
                         <TruckEV />
                     </div>
 
-                    {/* <div className="col-12">
+                    <div className="col-12">
                         <h2 className="mt-4">
                             Forecast Chart
                         </h2>
                         <TruckForecast />
-                    </div> */}
+                    </div>
 
                     <div className="col-12">
                         <h2 className="mt-4">

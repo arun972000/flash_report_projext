@@ -131,7 +131,27 @@
   padding: 0 !important;
 }
 
+.logo-container img {
+  width: 230px !important;
+  height: 80px !important;
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+@media (max-width: 640px) {
+  .logo-container img {
+    width: 150px !important;
+    height: 52px !important;
+  }
+}
+
 
 .edition-label {
   white-space: nowrap;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000; /* ensure it stays above other content */
+  background-color: #101010; /* or whatever your background is */
 }

@@ -8,31 +8,19 @@ import {
   YAxis,
   ResponsiveContainer,
   Tooltip,
-  Legend,
   CartesianGrid,
   Brush,
   Rectangle,
 } from 'recharts';
-import '../styles/chart.css'
+import '../styles/chart.css';
 
-// Helper: convert "2025-05" → "May25"
 const monthMap = {
-  '01': 'Jan',
-  '02': 'Feb',
-  '03': 'Mar',
-  '04': 'Apr',
-  '05': 'May',
-  '06': 'Jun',
-  '07': 'Jul',
-  '08': 'Aug',
-  '09': 'Sep',
-  '10': 'Oct',
-  '11': 'Nov',
-  '12': 'Dec',
+  '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr',
+  '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug',
+  '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec',
 };
 
 function formatMonth(input) {
-  // input like "2025-05"
   const [year, month] = input.split('-');
   return `${monthMap[month]}${year.slice(2)}`;
 }
@@ -58,37 +46,53 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-const PassengerForecast = () => {
+const PVForecast = () => {
   const [windowWidth, setWindowWidth] = useState(0);
   const [data, setData] = useState([]);
 
   useEffect(() => {
     const updateSize = () => setWindowWidth(window.innerWidth);
-    updateSize(); // initial
+    updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
   useEffect(() => {
-    // Replace URL below with your real API endpoint
-    fetch('/api/overall') 
+    fetch('/api/overall')
       .then(res => res.json())
       .then(apiData => {
-        // Map API data to chart data format
-        const chartData = apiData.map(item => ({
-          month: formatMonth(item.month),   // e.g. "May25"
-          'PV': item['passenger'] || 0,    // 2-wheeler value
-        }));
+        const now = new Date();
+        const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const chartData = apiData.map(item => {
+          const entryDate = new Date(item.month);
+          const label = formatMonth(item.month);
+          const isCurrent = entryDate.getFullYear() === currentMonth.getFullYear() &&
+            entryDate.getMonth() === currentMonth.getMonth();
+          const isPast = entryDate < currentMonth;
+
+          const val = item['passenger'] || 0;
+
+          return {
+            month: label,
+            pastPV: isPast || isCurrent ? val : null,
+            futurePV: isCurrent || !isPast ? val : null,
+          };
+        });
+
         setData(chartData);
       })
       .catch(e => {
         console.error('Error fetching data:', e);
-        setData([]); // fallback empty data
+        setData([]);
       });
   }, []);
 
   const isMobile = windowWidth <= 640;
   const chartHeight = isMobile ? 280 : 420;
+
+  const colorPV = '#FFCE56';
+  const colorForecastPV = `${colorPV}80`;
 
   return (
     <div style={{ position: 'relative', width: '100%', zIndex: 0 }}>
@@ -96,16 +100,7 @@ const PassengerForecast = () => {
         <LineChart
           data={data}
           margin={{ top: 20, right: 20, bottom: 20, left: 0 }}
-          animationDuration={2500}
-          animationEasing="ease-out"
         >
-          <defs>
-            <linearGradient id="histGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ffff" stopOpacity={0.9} />
-              <stop offset="100%" stopColor="#ffff" stopOpacity={0.3} />
-            </linearGradient>
-          </defs>
-
           <CartesianGrid stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
           <XAxis
             dataKey="month"
@@ -130,13 +125,9 @@ const PassengerForecast = () => {
             stroke="rgba(255,255,255,0.4)"
             fill="rgba(255,255,255,0.08)"
             strokeWidth={1}
-            tick={{
-              fill: 'rgba(255,255,255,0.6)',
-              fontSize: 9,
-              fontFamily: 'inherit',
-            }}
+            tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 9 }}
             tickMargin={4}
-            tickFormatter={(d) => d}
+            tickFormatter={d => d}
             traveller={
               <Rectangle
                 width={6}
@@ -150,20 +141,54 @@ const PassengerForecast = () => {
             }
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ marginTop: 24 }} />
+
           <Line
-            dataKey="PV"
-            name="PV"
-            stroke="url(#histGrad)"
+            type="linear"
+            dataKey="pastPV"
+            name="Historical PV"
+            stroke={colorPV}
             strokeWidth={3}
+            dot={{ r: 3, fill: colorPV }}
             connectNulls
-            animationBegin={0}
-            dot={{ r: 3 }}
+            isAnimationActive={false}
+          />
+          <Line
+            type="linear"
+            dataKey="futurePV"
+            name="Forecast PV"
+            stroke={colorForecastPV}
+            strokeWidth={3}
+            strokeDasharray="5 5"
+            dot={{ r: 3, stroke: colorPV, fill: colorForecastPV }}
+            connectNulls
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>
+
+      <div style={{
+        marginTop: 24,
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 24,
+        color: '#fff',
+        fontSize: 12
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 24, height: 3, background: colorPV, borderRadius: 2 }} />
+          <span>Historical PV</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 24,
+            height: 0,
+            borderTop: `2px dashed ${colorForecastPV}`,
+          }} />
+          <span>Forecast PV</span>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default PassengerForecast;
+export default PVForecast;

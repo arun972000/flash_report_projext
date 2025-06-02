@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 
 
 import React from 'react'
@@ -54,7 +55,11 @@ const CommercialVehicle = async () => {
                                     className="text-decoration-none text-dark text-center segment-card"
                                 >
                                     <div className="icon-circle bg-primary text-white">
-                                        <FaBus size={50} />
+                                        <img
+                                            src="/images/bus.png"   // adjust path if needed
+                                            alt="Bus"
+                                            style={{ width: 50, height: 50, objectFit: 'contain' }}
+                                        />
                                     </div>
                                     <div className="mt-2 fw-semibold fs-5" style={{ color: 'white' }}>Bus</div>
                                 </Link>
@@ -65,11 +70,16 @@ const CommercialVehicle = async () => {
                                     className="text-decoration-none text-dark text-center segment-card"
                                 >
                                     <div className="icon-circle bg-success text-white">
-                                        <FaTruck size={50} />
+                                        <img
+                                            src="/images/truck.png"  // adjust path if needed
+                                            alt="Truck"
+                                            style={{ width: 50, height: 50, objectFit: 'contain' }}
+                                        />
                                     </div>
                                     <div className="mt-2 fw-semibold fs-5" style={{ color: 'white' }}>Truck</div>
                                 </Link>
                             </div>
+
                         </div>
 
 

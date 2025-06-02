@@ -44,9 +44,10 @@ export async function GET() {
   try {
     const now = new Date();
 
-    const currentRaw = format(now, "yyyy-MM");
-    const previousRaw = format(subMonths(now, 1), "yyyy-MM");
-    const lastYearRaw = format(subMonths(now, 12), "yyyy-MM");
+const currentRaw = format(subMonths(now, 1), "yyyy-MM");     // previous month
+const previousRaw = format(subMonths(now, 2), "yyyy-MM");    // two months before now
+const lastYearRaw = format(subMonths(now, 13), "yyyy-MM");   // 13 months before now
+
 
     const availableMonths = await getAvailableMonths();
 

@@ -1,6 +1,6 @@
 import db from "@/lib/db";
 import { NextResponse } from "next/server";
-import { format, subMonths, addMonths, parse, parseISO } from "date-fns";
+import { format, subMonths, parse } from "date-fns";
 
 // No need to parse percentages now
 const parseValue = (val) => {
@@ -13,50 +13,57 @@ export async function GET() {
   try {
     const now = new Date();
 
-    const currentMonthStr = format(now, "MMM-yy");
+    // Set center to previous month (e.g., if today is June, use May)
+    const centerDate = subMonths(now, 1);
+    const centerMonthStr = format(centerDate, "MMM-yy");
 
-    const [found] = await db.execute(
-      `SELECT month FROM overall_automative_industry_line WHERE month = ? LIMIT 1`,
-      [currentMonthStr]
+    // Get all months from the DB
+    const [allMonthsResult] = await db.execute(
+      `SELECT month FROM overall_automative_industry_line`
     );
 
-    let centerMonthStr = currentMonthStr;
+    const monthsDates = allMonthsResult
+      .map(({ month }) => {
+        const parsed = parse(month, "MMM-yy", new Date());
+        return { month, date: parsed };
+      })
+      .filter(({ date }) => !isNaN(date))
+      .sort((a, b) => a.date - b.date); // Sort ascending
 
-    if (found.length === 0) {
-      const [allMonthsResult] = await db.execute(
-        `SELECT month FROM overall_automative_industry_line`
-      );
+    // Find the index of the intended center month
+    let centerIndex = monthsDates.findIndex(
+      ({ date }) => format(date, "MMM-yy") === centerMonthStr
+    );
 
-      const monthsDates = allMonthsResult
-        .map(({ month }) => {
-          const parsed = parse(month, "MMM-yy", new Date());
-          return { month, date: parsed };
-        })
-        .filter(({ date }) => !isNaN(date));
-
-      const priorMonths = monthsDates.filter(({ date }) => date <= now);
-
-      if (priorMonths.length === 0) {
-        const earliest = monthsDates.reduce(
-          (a, b) => (a.date < b.date ? a : b),
-          monthsDates[0]
-        );
-        centerMonthStr = earliest.month;
+    // Fallback to nearest month before centerDate if not found
+    if (centerIndex === -1) {
+      const fallback = monthsDates.filter(({ date }) => date < centerDate);
+      if (fallback.length === 0) {
+        centerIndex = 0;
       } else {
-        const latestPrior = priorMonths.reduce(
-          (a, b) => (a.date > b.date ? a : b),
-          priorMonths[0]
+        const latestBefore = fallback.reduce((a, b) =>
+          a.date > b.date ? a : b
         );
-        centerMonthStr = latestPrior.month;
+        centerIndex = monthsDates.findIndex(
+          (entry) => entry.month === latestBefore.month
+        );
       }
-      console.log(`Invalid centerMonthStr, using ${centerMonthStr} instead`);
     }
 
-    const centerDate = parse(centerMonthStr, "MMM-yy", new Date());
+    // Get up to 10 months: 3 before, center, and 6 after
+    const startIndex = Math.max(0, centerIndex - 3);
+    const endIndex = Math.min(monthsDates.length, centerIndex + 7); // inclusive of center
 
-    const startDate = format(subMonths(centerDate, 3), "yyyy-MM-dd");
-    const endDate = format(addMonths(centerDate, 3), "yyyy-MM-dd");
+    const selectedMonths = monthsDates
+      .slice(startIndex, endIndex)
+      .map(({ month }) => month);
 
+    if (selectedMonths.length === 0) {
+      return NextResponse.json([], { status: 200 });
+    }
+
+    // Build SQL placeholders (?, ?, ?...) for selected months
+    const placeholders = selectedMonths.map(() => "?").join(", ");
     const [rows] = await db.execute(
       `
       SELECT 
@@ -66,15 +73,16 @@ export async function GET() {
         passenger,
         cv,
         tractor,
+        truck,
+        bus,
         total
       FROM overall_automative_industry_line
-      WHERE STR_TO_DATE(CONCAT('01-', month), '%d-%b-%y') BETWEEN ? AND ?
+      WHERE month IN (${placeholders})
       ORDER BY STR_TO_DATE(CONCAT('01-', month), '%d-%b-%y') ASC
       `,
-      [startDate, endDate]
+      selectedMonths
     );
 
-    // Transform month format in the result
     const formattedRows = rows.map((row) => {
       const parsedDate = parse(row.month, "MMM-yy", new Date());
       return {
@@ -115,6 +123,8 @@ export async function POST(req) {
         passenger: null,
         cv: null,
         tractor: null,
+        truck: null,
+        bus: null,
         total: null,
       };
 
@@ -127,14 +137,16 @@ export async function POST(req) {
 
       await db.execute(
         `INSERT INTO overall_automative_industry_line
-         (month, two_wheeler, three_wheeler, passenger, cv, tractor, total)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
+         (month, two_wheeler, three_wheeler, passenger, cv, tractor, truck, bus, total)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
            two_wheeler = VALUES(two_wheeler),
            three_wheeler = VALUES(three_wheeler),
            passenger = VALUES(passenger),
            cv = VALUES(cv),
            tractor = VALUES(tractor),
+           truck = VALUES(truck),
+           bus = VALUES(bus),
            total = VALUES(total)`,
         [
           month,
@@ -143,6 +155,8 @@ export async function POST(req) {
           row.passenger,
           row.cv,
           row.tractor,
+          row.truck,
+          row.bus,
           row.total,
         ]
       );

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   LineChart,
   Line,
@@ -8,52 +8,22 @@ import {
   YAxis,
   ResponsiveContainer,
   Tooltip,
-  Legend,
   CartesianGrid,
   Brush,
   Rectangle,
 } from 'recharts';
-import '../styles/chart.css'
-import Link from 'next/link';
+import '../styles/chart.css';
 
-// Forecast lock logic
-const isLockedMonth = (month) => ['Jun25', 'Jul25', 'Aug25'].includes(month);
-
-// Tooltip
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload || !payload.length) return null;
-
-  const isLocked = isLockedMonth(label) || label === 'May25';
-
-  return (
-    <div style={{ background: '#333', color: '#fff', padding: 10, borderRadius: 5 }}>
-      <p>{label}</p>
-      {isLocked ? (
-        <p style={{ color: '#ccc', fontStyle: 'italic' }}>🔒 Subscribe to view details</p>
-      ) : (
-        payload.map((entry, index) => (
-          <p key={index} style={{ color: entry.color }}>
-            {entry.name}: {entry.value?.toLocaleString()}
-          </p>
-        ))
-      )}
-    </div>
-  );
+const monthMap = {
+  '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr',
+  '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug',
+  '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec',
 };
 
-// Data
-const rawData = [
-  { month: 'Jan25', '2W': 1525862 },
-  { month: 'Feb25', '2W': 1353280 },
-  { month: 'Mar25', '2W': 1508232 },
-  { month: 'Apr25', '2W': 1686774 },
-  { month: 'May25', '2W': 1756774 },
-  { month: 'Jun25', '2W': 1800000 },
-  { month: 'Jul25', '2W': 1500000 },
-  { month: 'Aug25', '2W': 1300000 }
-];
-
-const allowedMonths = ['Jan25', 'Feb25', 'Mar25', 'Apr25', 'May25', 'Jun25', 'Jul25', 'Aug25'];
+function formatMonth(input) {
+  const [year, month] = input.split('-');
+  return `${monthMap[month]}${year.slice(2)}`;
+}
 
 const abbreviate = (v) => {
   if (v >= 1e9) return `${(v / 1e9).toFixed(1).replace(/\.0$/, '')}B`;
@@ -62,46 +32,75 @@ const abbreviate = (v) => {
   return v.toString();
 };
 
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div style={{ background: '#333', color: '#fff', padding: 10, borderRadius: 5 }}>
+      <p>{label}</p>
+      {payload.map((entry, index) => (
+        <p key={index} style={{ color: entry.color }}>
+          {entry.name}: {entry.value?.toLocaleString()}
+        </p>
+      ))}
+    </div>
+  );
+};
+
 const TruckForecast = () => {
   const [windowWidth, setWindowWidth] = useState(0);
+  const [data, setData] = useState([]);
 
   useEffect(() => {
     const updateSize = () => setWindowWidth(window.innerWidth);
-    updateSize(); // initial
+    updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/overall')
+      .then(res => res.json())
+      .then(apiData => {
+        const now = new Date();
+        const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const chartData = apiData.map(item => {
+          const entryDate = new Date(item.month);
+          const label = formatMonth(item.month);
+          const isCurrent = entryDate.getFullYear() === currentMonth.getFullYear() &&
+            entryDate.getMonth() === currentMonth.getMonth();
+          const isPast = entryDate < currentMonth;
+
+          const val = item['truck'] || 0;
+
+          return {
+            month: label,
+            pastTruck: isPast || isCurrent ? val : null,
+            futureTruck: isCurrent || !isPast ? val : null,
+          };
+        });
+
+        setData(chartData);
+      })
+      .catch(e => {
+        console.error('Error fetching data:', e);
+        setData([]);
+      });
   }, []);
 
   const isMobile = windowWidth <= 640;
   const chartHeight = isMobile ? 280 : 420;
 
-  const filteredData = useMemo(
-    () =>
-      rawData
-        .filter(d => allowedMonths.includes(d.month))
-        .map(d => ({
-          ...d,
-          '2W': isLockedMonth(d.month) ? null : d['2W'],
-        })),
-    []
-  );
+  const colorTruck = '#9966FF';
+  const colorForecastTruck = `${colorTruck}80`;
 
   return (
     <div style={{ position: 'relative', width: '100%', zIndex: 0 }}>
       <ResponsiveContainer width="100%" height={chartHeight}>
         <LineChart
-          data={filteredData}
+          data={data}
           margin={{ top: 20, right: 20, bottom: 20, left: 0 }}
-          animationDuration={2500}
-          animationEasing="ease-out"
         >
-          <defs>
-            <linearGradient id="histGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ffff" stopOpacity={0.9} />
-              <stop offset="100%" stopColor="#ffff" stopOpacity={0.3} />
-            </linearGradient>
-          </defs>
-
           <CartesianGrid stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
           <XAxis
             dataKey="month"
@@ -121,18 +120,14 @@ const TruckForecast = () => {
           <Brush
             dataKey="month"
             startIndex={0}
-            endIndex={filteredData.length - 1}
+            endIndex={data.length - 1}
             height={12}
             stroke="rgba(255,255,255,0.4)"
             fill="rgba(255,255,255,0.08)"
             strokeWidth={1}
-            tick={{
-              fill: 'rgba(255,255,255,0.6)',
-              fontSize: 9,
-              fontFamily: 'inherit',
-            }}
+            tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 9 }}
             tickMargin={4}
-            tickFormatter={(d) => d}
+            tickFormatter={d => d}
             traveller={
               <Rectangle
                 width={6}
@@ -146,60 +141,52 @@ const TruckForecast = () => {
             }
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ marginTop: 24 }} />
+
           <Line
-            dataKey="2W"
-            name="2W"
-            stroke="url(#histGrad)"
+            type="linear"
+            dataKey="pastTruck"
+            name="Historical Truck"
+            stroke={colorTruck}
             strokeWidth={3}
+            dot={{ r: 3, fill: colorTruck }}
             connectNulls
-            animationBegin={0}
-            dot={{ r: 3 }}
+            isAnimationActive={false}
+          />
+          <Line
+            type="linear"
+            dataKey="futureTruck"
+            name="Forecast Truck"
+            stroke={colorForecastTruck}
+            strokeWidth={3}
+            strokeDasharray="5 5"
+            dot={{ r: 3, stroke: colorTruck, fill: colorForecastTruck }}
+            connectNulls
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>
 
-      {/* Forecast overlay */}
-      <div
-        style={{
-          position: 'absolute',
-         top: 20,
-          left: '58%',
-          width: '41%',
-          height: 'calc(100% - 100px)',
-          background: 'rgba(0, 0, 0, 0.35)',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-          borderLeft: '2px dashed rgba(255,255,255,0.3)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '0 8px',
-          textAlign: 'center',
-          zIndex: 0,
-          pointerEvents: 'none',
-        }}
-      >
-        <p className="shining-white" style={{ pointerEvents: 'none' }}>
-          🔒 Subscribe to the Platinum Package to access forecast values.
-        </p>
+      <div style={{
+        marginTop: 24,
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 24,
+        color: '#fff',
+        fontSize: 12
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 24, height: 3, background: colorTruck, borderRadius: 2 }} />
+          <span>Historical Truck</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 24,
+            height: 0,
+            borderTop: `2px dashed ${colorForecastTruck}`,
+          }} />
+          <span>Forecast Truck</span>
+        </div>
       </div>
-
-      {/* Transparent clickable link overlay */}
-      <Link
-        href="/subscription"
-        style={{
-          position: 'absolute',
-          top: 20,
-          left: '58%',
-          width: '41%',
-          height: 'calc(100% - 100px)',
-          zIndex: 2,
-          pointerEvents: 'auto',
-        }}
-      >
-        <span style={{ display: 'block', width: '100%', height: '100%' }} />
-      </Link>
     </div>
   );
 };

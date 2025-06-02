@@ -1,14 +1,16 @@
-import { format, subMonths, addMonths } from 'date-fns';
-import { NextResponse } from 'next/server';
-import db from '@/lib/db'; // adjust path as needed
+import { format, subMonths, addMonths } from "date-fns";
+import { NextResponse } from "next/server";
+import db from "@/lib/db"; // adjust path as needed
 
 // Format to "Mon-YY" like "May-25"
-const formatMonthKey = (date) => format(date, 'MMM-yy');
+const formatMonthKey = (date) => format(date, "MMM-yy");
 
 const normalize = (m) => m.toLowerCase();
 
 const getAvailableMonths = async () => {
-  const [rows] = await db.execute('SELECT DISTINCT month FROM commercial_segment_line');
+  const [rows] = await db.execute(
+    "SELECT DISTINCT month FROM commercial_segment_line"
+  );
   return rows.map((r) => r.month);
 };
 
@@ -18,7 +20,10 @@ export async function GET() {
     const available = await getAvailableMonths();
 
     if (!available || available.length === 0) {
-      return NextResponse.json({ message: 'No available months found in DB' }, { status: 404 });
+      return NextResponse.json(
+        { message: "No available months found in DB" },
+        { status: 404 }
+      );
     }
 
     const normAvail = available.map(normalize);
@@ -39,22 +44,31 @@ export async function GET() {
       }
 
       if (currentIndex === -1) {
-        return NextResponse.json({ message: 'No usable month found in DB' }, { status: 404 });
+        return NextResponse.json(
+          { message: "No usable month found in DB" },
+          { status: 404 }
+        );
       }
     }
 
     // Use the actual DB-cased month value
     const normalizedCurrent = normalize(currentRaw);
-    currentRaw = available.find((m) => normalize(m) === normalizedCurrent) || currentRaw;
+    currentRaw =
+      available.find((m) => normalize(m) === normalizedCurrent) || currentRaw;
 
     // Step 2: Get up to 3 months before and after
     const allSorted = [...available].sort((a, b) => {
-      return new Date('01-' + a).getTime() - new Date('01-' + b).getTime();
+      return new Date("01-" + a).getTime() - new Date("01-" + b).getTime();
     });
 
-    const currIndex = allSorted.findIndex((m) => normalize(m) === normalizedCurrent);
+    const currIndex = allSorted.findIndex(
+      (m) => normalize(m) === normalizedCurrent
+    );
 
-    const finalMonths = allSorted.slice(Math.max(0, currIndex - 3), currIndex + 4); // 3 before, current, 3 after
+    const finalMonths = allSorted.slice(
+      Math.max(0, currIndex - 3),
+      currIndex + 6
+    ); // 3 before, current, 3 after
 
     // Step 3: Fetch only those
     const [rows] = await db.execute(
@@ -64,18 +78,20 @@ export async function GET() {
          mcv,
          lcv
        FROM commercial_segment_line
-       WHERE month IN (${finalMonths.map(() => '?').join(',')})
+       WHERE month IN (${finalMonths.map(() => "?").join(",")})
        ORDER BY month ASC`,
       finalMonths
     );
 
     return NextResponse.json(rows);
   } catch (error) {
-    console.error('GET API Error:', error);
-    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+    console.error("GET API Error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch data" },
+      { status: 500 }
+    );
   }
 }
-
 
 export async function POST(req) {
   try {

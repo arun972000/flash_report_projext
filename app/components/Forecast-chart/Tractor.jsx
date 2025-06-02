@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   LineChart,
   Line,
@@ -8,31 +8,19 @@ import {
   YAxis,
   ResponsiveContainer,
   Tooltip,
-  Legend,
   CartesianGrid,
   Brush,
   Rectangle,
 } from 'recharts';
-import '../styles/chart.css'
+import '../styles/chart.css';
 
-// Helper: convert "2025-05" → "May25"
 const monthMap = {
-  '01': 'Jan',
-  '02': 'Feb',
-  '03': 'Mar',
-  '04': 'Apr',
-  '05': 'May',
-  '06': 'Jun',
-  '07': 'Jul',
-  '08': 'Aug',
-  '09': 'Sep',
-  '10': 'Oct',
-  '11': 'Nov',
-  '12': 'Dec',
+  '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr',
+  '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug',
+  '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec',
 };
 
 function formatMonth(input) {
-  // input like "2025-05"
   const [year, month] = input.split('-');
   return `${monthMap[month]}${year.slice(2)}`;
 }
@@ -58,37 +46,53 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-const ThreewheelerForecast = () => {
+const TractorForecast = () => {
   const [windowWidth, setWindowWidth] = useState(0);
   const [data, setData] = useState([]);
 
   useEffect(() => {
     const updateSize = () => setWindowWidth(window.innerWidth);
-    updateSize(); // initial
+    updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
   useEffect(() => {
-    // Replace URL below with your real API endpoint
     fetch('/api/overall')
       .then(res => res.json())
       .then(apiData => {
-        // Map API data to chart data format
-        const chartData = apiData.map(item => ({
-          month: formatMonth(item.month),   // e.g. "May25"
-          'TRAC': item['tractor'] || 0,    // 2-wheeler value
-        }));
+        const now = new Date();
+        const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const chartData = apiData.map(item => {
+          const entryDate = new Date(item.month);
+          const label = formatMonth(item.month);
+          const isCurrent = entryDate.getFullYear() === currentMonth.getFullYear() &&
+            entryDate.getMonth() === currentMonth.getMonth();
+          const isPast = entryDate < currentMonth;
+
+          const val = item['tractor'] || 0;
+
+          return {
+            month: label,
+            pastTRAC: isPast || isCurrent ? val : null,
+            futureTRAC: isCurrent || !isPast ? val : null,
+          };
+        });
+
         setData(chartData);
       })
       .catch(e => {
         console.error('Error fetching data:', e);
-        setData([]); // fallback empty data
+        setData([]);
       });
   }, []);
 
   const isMobile = windowWidth <= 640;
   const chartHeight = isMobile ? 280 : 420;
+
+  const colorTRAC = '#4BC0C0';
+  const colorForecastTRAC = `${colorTRAC}80`;
 
   return (
     <div style={{ position: 'relative', width: '100%', zIndex: 0 }}>
@@ -96,16 +100,7 @@ const ThreewheelerForecast = () => {
         <LineChart
           data={data}
           margin={{ top: 20, right: 20, bottom: 20, left: 0 }}
-          animationDuration={2500}
-          animationEasing="ease-out"
         >
-          <defs>
-            <linearGradient id="histGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ffff" stopOpacity={0.9} />
-              <stop offset="100%" stopColor="#ffff" stopOpacity={0.3} />
-            </linearGradient>
-          </defs>
-
           <CartesianGrid stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
           <XAxis
             dataKey="month"
@@ -130,13 +125,9 @@ const ThreewheelerForecast = () => {
             stroke="rgba(255,255,255,0.4)"
             fill="rgba(255,255,255,0.08)"
             strokeWidth={1}
-            tick={{
-              fill: 'rgba(255,255,255,0.6)',
-              fontSize: 9,
-              fontFamily: 'inherit',
-            }}
+            tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 9 }}
             tickMargin={4}
-            tickFormatter={(d) => d}
+            tickFormatter={d => d}
             traveller={
               <Rectangle
                 width={6}
@@ -150,20 +141,54 @@ const ThreewheelerForecast = () => {
             }
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ marginTop: 24 }} />
+
           <Line
-            dataKey="TRAC"
-            name="TRAC"
-            stroke="url(#histGrad)"
+            type="linear"
+            dataKey="pastTRAC"
+            name="Historical TRAC"
+            stroke={colorTRAC}
             strokeWidth={3}
+            dot={{ r: 3, fill: colorTRAC }}
             connectNulls
-            animationBegin={0}
-            dot={{ r: 3 }}
+            isAnimationActive={false}
+          />
+          <Line
+            type="linear"
+            dataKey="futureTRAC"
+            name="Forecast TRAC"
+            stroke={colorForecastTRAC}
+            strokeWidth={3}
+            strokeDasharray="5 5"
+            dot={{ r: 3, stroke: colorTRAC, fill: colorForecastTRAC }}
+            connectNulls
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>
+
+      <div style={{
+        marginTop: 24,
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 24,
+        color: '#fff',
+        fontSize: 12
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 24, height: 3, background: colorTRAC, borderRadius: 2 }} />
+          <span>Historical TRAC</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 24,
+            height: 0,
+            borderTop: `2px dashed ${colorForecastTRAC}`,
+          }} />
+          <span>Forecast TRAC</span>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default ThreewheelerForecast;
+export default TractorForecast;
