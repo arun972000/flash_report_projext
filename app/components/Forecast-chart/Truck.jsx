@@ -147,8 +147,8 @@ const TruckForecast = () => {
             dataKey="pastTruck"
             name="Historical Truck"
             stroke={colorTruck}
-            strokeWidth={3}
-            dot={{ r: 3, fill: colorTruck }}
+            strokeWidth={1}
+            dot={{ r: 2, fill: colorTruck }}
             connectNulls
             isAnimationActive={false}
           />
@@ -157,9 +157,9 @@ const TruckForecast = () => {
             dataKey="futureTruck"
             name="Forecast Truck"
             stroke={colorForecastTruck}
-            strokeWidth={3}
+            strokeWidth={1}
             strokeDasharray="5 5"
-            dot={{ r: 3, stroke: colorTruck, fill: colorForecastTruck }}
+            dot={false}
             connectNulls
             isAnimationActive={false}
           />

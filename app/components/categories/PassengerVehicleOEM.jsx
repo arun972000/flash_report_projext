@@ -9,9 +9,11 @@ const PassengerVehicle_Piechart = dynamic(
 );
 
 const FourWheelerApplication = dynamic(
-    () => import("../application-split/FourWheeler"),
+    () => import("../DummyAppSplit/FourWheeler"),
     { ssr: false }
 );
+
+import './category.css'
 
 import PassengerForecast from '../Forecast-chart/FourWheeler';
 
@@ -27,7 +29,7 @@ const passengerVehicle = async () => {
                             Passenger Vehicle Market Performance – April 2025
                         </h3>
                         <div
-                            className=''
+                            className='category_content'
                             style={{ textAlign: 'justify' }}
                             dangerouslySetInnerHTML={{ __html: passengerVehicleText.passenger_vehicle_main || '<p>content is loading...</p>'}}
                         />

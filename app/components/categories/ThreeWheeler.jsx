@@ -7,7 +7,7 @@ const ThreeWheeler_Piechart = dynamic(
 );
 
 const ThreeWheelerApplication = dynamic(
-    () => import("../application-split/ThreeWheeler"),
+    () => import("../DummyAppSplit/ThreeWheeler"),
     { ssr: false }
 );
 
@@ -15,6 +15,7 @@ const ThreeWheelerForecast = dynamic(
     () => import("../Forecast-chart/ThreeWheeler"),
     { ssr: false }
 );
+import './category.css'
 
 const ThreeWheeler = async () => {
     const threeWheelerTextRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`, { cache: 'no-store' })
@@ -28,7 +29,7 @@ const ThreeWheeler = async () => {
                             Three-Wheeler Market Summary – April 2025
                         </h3>
                         <div
-                            className=''
+                            className='category_content'
                             style={{ textAlign: 'justify' }}
                             dangerouslySetInnerHTML={{ __html: threeWheelerText.threewheeler || '<p>content is loading...</p>'}}
                         />

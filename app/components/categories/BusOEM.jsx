@@ -4,6 +4,7 @@ import BusApplication from "../application-split/Bus";
 const BusOEMChart = dynamic(() => import("../charts/BusOEM"), { ssr: false });
 const BusEV = dynamic(() => import("../ev/Bus-EV"), { ssr: false });
 const BusForecast = dynamic(() => import("../Forecast-chart/Bus"), { ssr: false });
+import './category.css'
 
 const BusOEM = async () => {
     const twoWheelerTextRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`, { cache: 'no-store' })
@@ -18,7 +19,7 @@ const BusOEM = async () => {
                             {twoWheelerText.bus_heading || 'Bus OEM Performance'}
                         </h2>
                         <div
-                            className=''
+                            className='category_content'
                             style={{ textAlign: 'justify' }}
                             dangerouslySetInnerHTML={{ __html: twoWheelerText.bus || '<p>content is loading...</p>' }}
                         />

@@ -147,8 +147,8 @@ const CVForecast = () => {
             dataKey="pastCV"
             name="Historical CV"
             stroke={colorCV}
-            strokeWidth={3}
-            dot={{ r: 3, fill: colorCV }}
+            strokeWidth={1}
+            dot={{ r: 1, fill: colorCV }}
             connectNulls
             isAnimationActive={false}
           />
@@ -157,9 +157,9 @@ const CVForecast = () => {
             dataKey="futureCV"
             name="Forecast CV"
             stroke={colorForecastCV}
-            strokeWidth={3}
+            strokeWidth={1}
             strokeDasharray="5 5"
-            dot={{ r: 3, stroke: colorCV, fill: colorForecastCV }}
+            dot={false}
             connectNulls
             isAnimationActive={false}
           />

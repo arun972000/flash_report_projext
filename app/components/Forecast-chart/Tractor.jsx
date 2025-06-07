@@ -147,8 +147,8 @@ const TractorForecast = () => {
             dataKey="pastTRAC"
             name="Historical TRAC"
             stroke={colorTRAC}
-            strokeWidth={3}
-            dot={{ r: 3, fill: colorTRAC }}
+            strokeWidth={1}
+            dot={{ r: 2, fill: colorTRAC }}
             connectNulls
             isAnimationActive={false}
           />
@@ -157,9 +157,9 @@ const TractorForecast = () => {
             dataKey="futureTRAC"
             name="Forecast TRAC"
             stroke={colorForecastTRAC}
-            strokeWidth={3}
+            strokeWidth={1}
             strokeDasharray="5 5"
-            dot={{ r: 3, stroke: colorTRAC, fill: colorForecastTRAC }}
+            dot={false}
             connectNulls
             isAnimationActive={false}
           />

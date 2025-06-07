@@ -259,7 +259,7 @@ const BusEv = () => {
                   borderRadius: "50%",
                 }}
               />
-              <span style={{ fontSize: "0.6rem", minWidth: 80, textAlign: "left" }}>{name}</span>
+              <span style={{ fontSize: "0.6rem",  textAlign: "center" }}>{name}</span>
             </div>
           ))}
         </div>

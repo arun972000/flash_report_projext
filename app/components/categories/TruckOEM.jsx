@@ -4,6 +4,7 @@ import TruckApplication from "../application-split/Truck";
 const TruckOEMChart = dynamic(() => import("../charts/TruckOEM"), { ssr: false });
 const TruckEV = dynamic(() => import("../ev/Truck-EV"), { ssr: false });
 const TruckForecast = dynamic(() => import("../Forecast-chart/Truck"), { ssr: false });
+import './category.css'
 
 const TruckOEM = async () => {
     const twoWheelerTextRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`, { cache: 'no-store' })
@@ -18,7 +19,7 @@ const TruckOEM = async () => {
                             {twoWheelerText.twowheeler_heading || 'Truck OEM Performance'}
                         </h2>
                         <div
-                            className=''
+                            className='category_content'
                             style={{ textAlign: 'justify' }}
                             dangerouslySetInnerHTML={{ __html: twoWheelerText.twowheeler || '<p>content is loading...</p>' }}
                         />

@@ -147,8 +147,8 @@ const ThreeWheelerForecast = () => {
             dataKey="past3W"
             name="Historical 3W"
             stroke={color3W}
-            strokeWidth={3}
-            dot={{ r: 3, fill: color3W }}
+            strokeWidth={1}
+            dot={{ r: 1, fill: color3W }}
             connectNulls
             isAnimationActive={false}
           />
@@ -157,9 +157,9 @@ const ThreeWheelerForecast = () => {
             dataKey="future3W"
             name="Forecast 3W"
             stroke={colorForecast3W}
-            strokeWidth={3}
+            strokeWidth={1}
             strokeDasharray="5 5"
-            dot={{ r: 3, stroke: color3W, fill: colorForecast3W }}
+            dot={false}
             connectNulls
             isAnimationActive={false}
           />

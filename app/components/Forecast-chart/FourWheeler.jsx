@@ -147,8 +147,8 @@ const PVForecast = () => {
             dataKey="pastPV"
             name="Historical PV"
             stroke={colorPV}
-            strokeWidth={3}
-            dot={{ r: 3, fill: colorPV }}
+            strokeWidth={1}
+            dot={{ r: 1, fill: colorPV }}
             connectNulls
             isAnimationActive={false}
           />
@@ -157,9 +157,9 @@ const PVForecast = () => {
             dataKey="futurePV"
             name="Forecast PV"
             stroke={colorForecastPV}
-            strokeWidth={3}
+            strokeWidth={1}
             strokeDasharray="5 5"
-            dot={{ r: 3, stroke: colorPV, fill: colorForecastPV }}
+            dot={false}
             connectNulls
             isAnimationActive={false}
           />

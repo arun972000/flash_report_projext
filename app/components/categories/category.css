@@ -1,0 +1,6 @@
+@media (max-width: 768px) {
+  /* Mobile */
+  .category_content {
+    font-size: 0.8rem;
+  }
+}

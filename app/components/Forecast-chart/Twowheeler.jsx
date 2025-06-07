@@ -147,8 +147,8 @@ const TwoWheelerForecast = () => {
             dataKey="past2W"
             name="Historical 2W"
             stroke={color2W}
-            strokeWidth={3}
-            dot={{ r: 3, fill: color2W }}
+            strokeWidth={1}
+            dot={{ r: 2, fill: color2W }}
             connectNulls
             isAnimationActive={false}
           />
@@ -157,9 +157,9 @@ const TwoWheelerForecast = () => {
             dataKey="future2W"
             name="Forecast 2W"
             stroke={colorForecast2W}
-            strokeWidth={3}
+            strokeWidth={1}
             strokeDasharray="5 5"
-            dot={{ r: 3, stroke: color2W, fill: colorForecast2W }}
+            dot={false}
             connectNulls
             isAnimationActive={false}
           />

@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-import TractorApplication from "../application-split/Tractor";
+import TractorApplication from "../DummyAppSplit/Tractor";
 import Tractor_EV from '../ev/Tractor_ev'
 
 const Tractor_Piechart = dynamic(
@@ -8,6 +8,7 @@ const Tractor_Piechart = dynamic(
 );
 
 import TractorForecast from '../Forecast-chart/Tractor';
+import './category.css'
 
 const TractorOEM = async () => {
     const tractorTextRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`, { cache: 'no-store' })
@@ -21,7 +22,7 @@ const TractorOEM = async () => {
                             Tractor OEM
                         </h3>
                         <div
-                            className=''
+                            className='category_content'
                             style={{ textAlign: 'justify' }}
                             dangerouslySetInnerHTML={{ __html: tractorText.tractor || '<p>content is loading...</p>' }}
                         />

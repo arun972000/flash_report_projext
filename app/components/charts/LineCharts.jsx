@@ -225,8 +225,8 @@ const CustomLineChart = () => {
                 dataKey={`${cat}_past`}
                 name={`Historical ${cat}`}
                 stroke={`url(#${cat}-grad)`}
-                strokeWidth={3}
-                dot={{ r: 3, fill: colors[cat] }}
+                strokeWidth={1}
+                dot={{ r: 2, fill: colors[cat] }}
                 connectNulls
                 isAnimationActive={false}
               />
@@ -235,9 +235,9 @@ const CustomLineChart = () => {
                 dataKey={`${cat}_future`}
                 name={`Forecast ${cat}`}
                 stroke={colors[cat] + '80'}
-                strokeWidth={3}
+                strokeWidth={1}
                 strokeDasharray="5 5"
-                dot={{ r: 3, stroke: colors[cat], fill: colors[cat] + '80' }}
+                dot={false}
                 connectNulls
                 isAnimationActive={false}
               />

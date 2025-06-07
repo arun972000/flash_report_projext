@@ -5,10 +5,10 @@ import React from 'react'
 import CustomStackBarChart from '../charts/stackVerticalChart'
 import CM_Piechart from '../charts/CM-PieChart'
 import CommercialVehicleReport from '../Forecast-chart/CommercialVehicle'
-
 import Link from 'next/link'
-import { FaBus, FaTruck } from 'react-icons/fa'  // Font Awesome icons
 import './cv.css'
+import Image from 'next/Image'
+
 
 
 const CommercialVehicle = async () => {
@@ -23,7 +23,7 @@ const CommercialVehicle = async () => {
                         <div className='col-12 mt-4'>
                             <h3>Commercial Vehicle OEM Performance – April 2025</h3>
                             <div
-                                className=''
+                                className='category_content'
                                 style={{ textAlign: 'justify' }}
                                 dangerouslySetInnerHTML={{ __html: commercialText.commercial_vehicle || '<p>content is loading...</p>' }}
                             />
@@ -47,10 +47,13 @@ const CommercialVehicle = async () => {
                             <h2 className="text-center mb-4" style={{ fontWeight: '700' }}>
                                 Application Segments
                             </h2>
-
-                            <div className="d-flex justify-content-center gap-5 flex-wrap">
-                                {/* Bus Segment */}
-                                <Link
+<div className='col-12 mt-3'>
+                            <Link href='https://raceautoindia.com/subscription'><div style={{ width: '100%', position: 'relative', aspectRatio: '4.18/1', border: '1px solid white' }}>
+                                <Image src="/images/fr-table.jpg" alt='flash-report-table' fill />
+                            </div></Link>
+                        </div>
+                            {/* <div className="d-flex justify-content-center gap-5 flex-wrap">
+                               
                                     href="/bus"
                                     className="text-decoration-none text-dark text-center segment-card"
                                 >
@@ -64,7 +67,7 @@ const CommercialVehicle = async () => {
                                     <div className="mt-2 fw-semibold fs-5" style={{ color: 'white' }}>Bus</div>
                                 </Link>
 
-                                {/* Truck Segment */}
+                              
                                 <Link
                                     href="/truck"
                                     className="text-decoration-none text-dark text-center segment-card"
@@ -78,7 +81,7 @@ const CommercialVehicle = async () => {
                                     </div>
                                     <div className="mt-2 fw-semibold fs-5" style={{ color: 'white' }}>Truck</div>
                                 </Link>
-                            </div>
+                            </div> */}
 
                         </div>
 

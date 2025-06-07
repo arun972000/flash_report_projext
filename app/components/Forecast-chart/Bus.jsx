@@ -147,8 +147,8 @@ const BusForeCast = () => {
             dataKey="pastBus"
             name="Historical Bus"
             stroke={colorBus}
-            strokeWidth={3}
-            dot={{ r: 3, fill: colorBus }}
+            strokeWidth={1}
+            dot={{ r: 1, fill: colorBus }}
             connectNulls
             isAnimationActive={false}
           />
@@ -157,9 +157,9 @@ const BusForeCast = () => {
             dataKey="futureBus"
             name="Forecast Bus"
             stroke={colorForecastBus}
-            strokeWidth={3}
+            strokeWidth={1}
             strokeDasharray="5 5"
-            dot={{ r: 3, stroke: colorBus, fill: colorForecastBus }}
+            dot={false}
             connectNulls
             isAnimationActive={false}
           />

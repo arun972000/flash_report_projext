@@ -1,12 +1,13 @@
 import dynamic from "next/dynamic";
 import React from 'react';
-import ForecastChart from '../charts/DummyLineChart';
+import ForecastChart from '../DummyAppSplit/TwoWheeler';
 import CustomPieChart from '../charts/PieChart'
 import TwoWheelerOEM from "../charts/PieChart";
 
 // import CustomPieChart from "../charts/PieChart";
 const TwoWheelerEV = dynamic(() => import("../ev/TwoWheeler-EV"), { ssr: false });
 const TwoWheelerForecast = dynamic(() => import("../Forecast-chart/Twowheeler"), { ssr: false });
+import './category.css'
 
 const TwoWheeler = async () => {
     const twoWheelerTextRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`, { cache: 'no-store' })
@@ -21,7 +22,7 @@ const TwoWheeler = async () => {
                             {twoWheelerText.twowheeler_heading || 'Two-Wheeler OEM Performance'}
                         </h2>
                         <div
-                            className=''
+                            className='category_content'
                             style={{ textAlign: 'justify' }}
                             dangerouslySetInnerHTML={{ __html: twoWheelerText.twowheeler || '<p>content is loading...</p>' }}
                         />
