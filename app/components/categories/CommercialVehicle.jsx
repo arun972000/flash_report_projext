@@ -7,7 +7,7 @@ import CM_Piechart from '../charts/CM-PieChart'
 import CommercialVehicleReport from '../Forecast-chart/CommercialVehicle'
 import Link from 'next/link'
 import './cv.css'
-import Image from 'next/Image'
+import Image from 'next/image'
 
 
 
