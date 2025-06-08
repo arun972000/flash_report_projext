@@ -3,6 +3,8 @@ import dynamic from "next/dynamic";
 import React from 'react';
 import FourWheelerEVShare from '../ev/FourWheeler-EV';
 
+import FourAwheelerDummy from '../ev/DummyFourwheeler'
+
 const PassengerVehicle_Piechart = dynamic(
     () => import("../charts/PassengerVehiclePieChart"),
     { ssr: false }
@@ -48,7 +50,8 @@ const passengerVehicle = async () => {
                     </div>
 
                     <div className="col-12">
-                        <FourWheelerEVShare />
+                        {/* <FourWheelerEVShare /> */}
+                        <FourAwheelerDummy/>
                     </div>
 
                     <div className="col-12">

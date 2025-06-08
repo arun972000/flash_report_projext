@@ -2,6 +2,7 @@
 import React from 'react'
 import LineChartWithTotal from '../charts/LineCharts'
 import RechartsChart from '../charts/customizechart'
+import DummyBarChart from '../charts/DummyBarChart'
 import './category.css'
 
 const OverAll = async () => {
@@ -27,15 +28,16 @@ const OverAll = async () => {
                             dangerouslySetInnerHTML={{ __html: overAllText.overall_oem_main || '<p>content is loading...</p>' }}
                         />
                     </div>
-                    {/* <div className='col-12'>
+                    <div className='col-12'>
                         <h2 className="mb-3">{overAllText.alternative_fuel_heading || 'April 2025 – Alternative Fuel Adoption Summary'}</h2>
-                        <RechartsChart />
+                        {/* <RechartsChart /> */}
+                        <DummyBarChart />
                         <div
                             className='mt-2 category_content'
                             style={{ textAlign: 'justify' }}
                             dangerouslySetInnerHTML={{ __html: overAllText.overall_oem_secondary || '<p>content is loading...</p>' }}
                         />
-                    </div> */}
+                    </div>
                 </div>
             </div>
         </div>

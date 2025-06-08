@@ -2,7 +2,7 @@
 
 
 import React from 'react'
-import CustomStackBarChart from '../charts/stackVerticalChart'
+import StaticCommercialSegmentChart from '../charts/DummyStackBarChart'
 import CM_Piechart from '../charts/CM-PieChart'
 import CommercialVehicleReport from '../Forecast-chart/CommercialVehicle'
 import Link from 'next/link'
@@ -33,7 +33,8 @@ const CommercialVehicle = async () => {
 
                         <div className='col-12 mt-5'>
                             <h3>Commercial Vehicles Segmental Split</h3>
-                            <CustomStackBarChart />
+                            {/* <CustomStackBarChart /> */}
+                            <StaticCommercialSegmentChart />
                         </div>
 
                         <div className='col-12'>
@@ -47,11 +48,11 @@ const CommercialVehicle = async () => {
                             <h2 className="text-center mb-4" style={{ fontWeight: '700' }}>
                                 Application Segments
                             </h2>
-<div className='col-12 mt-3'>
-                            <Link href='https://raceautoindia.com/subscription'><div style={{ width: '100%', position: 'relative', aspectRatio: '4.18/1', border: '1px solid white' }}>
-                                <Image src="/images/fr-table.jpg" alt='flash-report-table' fill />
-                            </div></Link>
-                        </div>
+                            <div className='col-12 mt-3'>
+                                <Link href='https://raceautoindia.com/subscription'><div style={{ width: '100%', position: 'relative', aspectRatio: '4.18/1', border: '1px solid white' }}>
+                                    <Image src="/images/fr-table.jpg" alt='flash-report-table' fill />
+                                </div></Link>
+                            </div>
                             {/* <div className="d-flex justify-content-center gap-5 flex-wrap">
                                
                                     href="/bus"
