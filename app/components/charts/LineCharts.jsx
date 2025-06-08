@@ -60,31 +60,20 @@ const CustomLegend = ({ selectedCat }) => {
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: 20,
-        gap: 24,
+        gap: 20,
         color: '#fff',
       }}
     >
       {categoriesToShow.map(cat => (
-        <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 24, height: 3, background: colors[cat], borderRadius: 2 }} />
-            <span style={{ fontSize: 12 }}>Historical {cat}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div
-              style={{
-                width: 24,
-                height: 0,
-                borderTop: `2px dashed ${colors[cat]}80`, // forecast color
-              }}
-            />
-            <span style={{ fontSize: 12 }}>Forecast {cat}</span>
-          </div>
+        <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 20, height: 3, background: colors[cat], borderRadius: 2 }} />
+          <span style={{ fontSize: 13 }}>{cat}</span>
         </div>
       ))}
     </div>
   );
 };
+
 
 const CustomLineChart = () => {
   const [selectedCat, setSelectedCat] = useState('All');
