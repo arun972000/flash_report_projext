@@ -28,7 +28,7 @@ const passengerVehicle = async () => {
                 <div className="row">
                     <div className='col-12'>
                         <h3>
-                            Passenger Vehicle Market Performance – April 2025
+                            {passengerVehicleText.passenger_heading || 'Passenger Vehicle Market Performance'}
                         </h3>
                         <div
                             className='category_content'

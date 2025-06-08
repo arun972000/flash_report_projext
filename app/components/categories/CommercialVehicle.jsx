@@ -21,7 +21,7 @@ const CommercialVehicle = async () => {
                 <div className='container-fluid'>
                     <div className="row">
                         <div className='col-12 mt-4'>
-                            <h3>Commercial Vehicle OEM Performance – April 2025</h3>
+                            <h3>{commercialText.commercial_heading || 'Commercial Vehicle OEM Performance'}</h3>
                             <div
                                 className='category_content'
                                 style={{ textAlign: 'justify' }}
