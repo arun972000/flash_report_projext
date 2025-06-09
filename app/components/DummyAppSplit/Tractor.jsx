@@ -1,24 +1,32 @@
-'use client'
+'use client';
 
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 const data = [
-  { name: 'Primary Tillage', value: 22.5 },         // midpoint of 20-25%
-  { name: 'Secondary Tillage', value: 17.5 },       // midpoint of 15-20%
-  { name: 'Seeding & Planting', value: 12.5 },      // midpoint of 10-15%
-  { name: 'Harvesting & Post-Harvest', value: 17.5 }, // midpoint of 15-20%
-  { name: 'Haulage / Transport', value: 27.5 },     // midpoint of 25-30%
-  { name: 'Irrigation & Pumping', value: 6.5 },     // midpoint of 5-8%
-  { name: 'Horticulture / Specialty Crops', value: 3.5 } // midpoint of 2-5%
-];
+  { "name": "Primary Tillage", "value": 32.55 },
+  { "name": "Secondary Tillage", "value": 19.85 },
+  { "name": "Seeding & Planting", "value": 14.22 },
+  { "name": "Harvesting & Post-Harvest", "value": 9.22 },
+  { "name": "Haulage / Transport", "value": 8.12 },
+  { "name": "Irrigation & Pumping", "value": 6.88 },
+  { "name": "Horticulture / Specialty Crops", "value": 9.16 }
+]
 
-const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A569BD', '#5DADE2', '#48C9B0'];
+
+// 🎨 One color per slice, matching the order of data
+const colors = [
+  '#4e79a7', // Private use
+  '#f28e2c', // Delivery & logistics
+  '#e15759', // Rental/sharing services
+  '#76b7b2', // Business/corporate fleets
+  '#59a14f', // Others
+];
 
 const renderLabel = ({ percent }) => `${(percent * 100).toFixed(0)}%`;
 
-const DummyTractorApp = () => {
+const DummyTwoWheelerApp = () => {
   const router = useRouter();
   const [hovering, setHovering] = useState(false);
 
@@ -45,78 +53,17 @@ const DummyTractorApp = () => {
                 <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
               ))}
             </Pie>
-            <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+            <Tooltip />
           </PieChart>
         </ResponsiveContainer>
-
-        {/* Overlay blur */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backdropFilter: 'blur(3px)',
-            background:
-              'linear-gradient(to bottom right, rgba(0,0,0,0.6), rgba(0,0,0,0.8))',
-            zIndex: 10,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            flexDirection: 'column',
-            padding: '1rem',
-            textAlign: 'center',
-            borderRadius: 4,
-          }}
-        >
-          <h2
-            style={{
-              fontSize: '2rem',
-              marginBottom: '0.5rem',
-              fontWeight: 700,
-            }}
-          >
-            Access Full Insights
-          </h2>
-          <p
-            style={{
-              fontSize: '1rem',
-              marginBottom: '1rem',
-              color: '#ccc',
-              maxWidth: '320px',
-            }}
-          >
-            Subscribe to unlock detailed analytics and monthly performance data.
-          </p>
-          <button
-            style={{
-              padding: '10px 24px',
-              backgroundColor: '#007BFF',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-              transition: 'background 0.3s ease',
-            }}
-            onClick={() => router.push('https://raceautoindia.com/subscription')}
-          >
-            Subscribe Now
-          </button>
-        </div>
       </div>
 
-      {/* Legend outside of blur overlay */}
-      <div className="d-flex flex-wrap justify-content-center mt-1" style={{ gap: '10px' }}>
+      {/* Custom Legend */}
+      <div className="row justify-content-center mt-3">
         {data.map((entry, index) => (
           <div
             key={index}
-            className="d-flex align-items-center mb-2"
-            style={{ gap: 8, minWidth: 120 }}
+            className="col-auto d-flex align-items-center mb-2 mx-2"
           >
             <div
               style={{
@@ -124,9 +71,12 @@ const DummyTractorApp = () => {
                 height: 10,
                 backgroundColor: colors[index % colors.length],
                 borderRadius: 3,
+                marginRight: 8,
               }}
             />
-            <span style={{ fontSize: "0.6rem", textAlign: "left" }}>{entry.name}</span>
+            <span style={{ fontSize: '0.6rem', textAlign: 'left' }}>
+              {entry.name}
+            </span>
           </div>
         ))}
       </div>
@@ -134,4 +84,4 @@ const DummyTractorApp = () => {
   );
 };
 
-export default DummyTractorApp;
+export default DummyTwoWheelerApp;

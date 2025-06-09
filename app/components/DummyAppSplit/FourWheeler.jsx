@@ -1,23 +1,31 @@
-'use client'
+'use client';
 
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 const data = [
-  { name: 'Personal Use', value: 65 },
-  { name: 'Corporate/Fleet Use', value: 12 },
-  { name: 'Ride-Hailing', value: 10 },
-  { name: 'Self-Drive Rentals', value: 6 },
-  { name: 'Government/Institutional Use', value: 5 },
-  { name: 'Others', value: 2 },
-];
+  { "name": "Personal (Family)", "value": 77.88 },
+  { "name": "Ride‑hailing (Ola/Uber)", "value": 5.22 },
+  { "name": "Self‑drive Rentals", "value": 5.2 },
+  { "name": "Corporate/Fleet Use", "value": 6.98 },
+  { "name": "Government/Institutional Use", "value": 2.88 },
+  { "name": "Others (demo, exports, chauffeur‑driven)", "value": 1.84 }
+]
 
-const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#FF0000', '#00BFFF']; // Add more colors as needed
+
+// 🎨 One color per slice, matching the order of data
+const colors = [
+  '#4e79a7', // Private use
+  '#f28e2c', // Delivery & logistics
+  '#e15759', // Rental/sharing services
+  '#76b7b2', // Business/corporate fleets
+  '#59a14f', // Others
+];
 
 const renderLabel = ({ percent }) => `${(percent * 100).toFixed(0)}%`;
 
-const DummyFourWheelerApplication = () => {
+const DummyTwoWheelerApp = () => {
   const router = useRouter();
   const [hovering, setHovering] = useState(false);
 
@@ -47,76 +55,14 @@ const DummyFourWheelerApplication = () => {
             <Tooltip />
           </PieChart>
         </ResponsiveContainer>
-
-
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backdropFilter: 'blur(3px)',
-            background:
-              'linear-gradient(to bottom right, rgba(0,0,0,0.6), rgba(0,0,0,0.8))',
-            zIndex: 10,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            flexDirection: 'column',
-            padding: '1rem',
-            textAlign: 'center',
-            borderRadius: 4,
-          }}
-        >
-          <h2
-            style={{
-              fontSize: '2rem',
-              marginBottom: '0.5rem',
-              fontWeight: 700,
-            }}
-          >
-            Access Full Insights
-          </h2>
-          <p
-            style={{
-              fontSize: '1rem',
-              marginBottom: '1rem',
-              color: '#ccc',
-              maxWidth: '320px',
-            }}
-          >
-            Subscribe to unlock detailed analytics and monthly performance data.
-          </p>
-          <button
-            style={{
-              padding: '10px 24px',
-              backgroundColor: '#007BFF',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-              transition: 'background 0.3s ease',
-            }}
-            onClick={() => router.push('https://raceautoindia.com/subscription')}
-          >
-            Subscribe Now
-          </button>
-        </div>
-
       </div>
 
-      {/* Legend outside of blur overlay */}
-      <div className="d-flex flex-wrap justify-content-center mt-1" style={{ gap: '10px' }}>
+      {/* Custom Legend */}
+      <div className="row justify-content-center mt-3">
         {data.map((entry, index) => (
           <div
             key={index}
-            className="d-flex align-items-center mb-2"
-            style={{ gap: 8, minWidth: 120 }}
+            className="col-auto d-flex align-items-center mb-2 mx-2"
           >
             <div
               style={{
@@ -124,9 +70,12 @@ const DummyFourWheelerApplication = () => {
                 height: 10,
                 backgroundColor: colors[index % colors.length],
                 borderRadius: 3,
+                marginRight: 8,
               }}
             />
-            <span style={{ fontSize: "0.6rem", textAlign: "left" }}>{entry.name}</span>
+            <span style={{ fontSize: '0.6rem', textAlign: 'left' }}>
+              {entry.name}
+            </span>
           </div>
         ))}
       </div>
@@ -134,4 +83,4 @@ const DummyFourWheelerApplication = () => {
   );
 };
 
-export default DummyFourWheelerApplication;
+export default DummyTwoWheelerApp;
