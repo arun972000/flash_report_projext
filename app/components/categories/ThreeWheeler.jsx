@@ -26,7 +26,7 @@ const ThreeWheeler = async () => {
                 <div className="row">
                     <div className='col-12'>
                         <h3>
-                            Three-Wheeler Market Summary – April 2025
+                            {threeWheelerText.threewheeler_heading || 'Three-Wheeler Market Summary'}
                         </h3>
                         <div
                             className='category_content'
