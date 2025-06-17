@@ -6,6 +6,7 @@ const nextConfig = {
   env: {
     BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL,
   },
+  crossOrigin: 'anonymous',
   images: {
     domains: ['raceautonextjs-bucket.s3.ap-south-1.amazonaws.com'],
     remotePatterns: [
