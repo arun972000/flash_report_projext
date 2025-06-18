@@ -1,237 +1,227 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Brush,
-  Rectangle,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Brush, Rectangle,
 } from 'recharts';
 import '../styles/chart.css';
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload || !payload.length) return null;
-
-  return (
-    <div style={{ background: '#333', color: '#fff', padding: 10, borderRadius: 5 }}>
-      <p>{label}</p>
-      {payload.map((entry, index) => (
-        <p key={index} style={{ color: entry.color }}>
-          {entry.name}: {entry.value?.toLocaleString()}
-        </p>
-      ))}
-    </div>
-  );
-};
-
-const categories = ['All', '2W', '3W', 'PV', 'TRAC', 'CV', 'Total'];
-const colors = {
+const catColors = {
   '2W': '#ffffff',
   '3W': '#ff1f23',
   PV: '#FFCE56',
   TRAC: '#4BC0C0',
+  Truck: '#00CED1',
+  Bus: '#DC143C',
   CV: '#9966FF',
   Total: '#FF9F40',
 };
 
-const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-const abbreviate = v => {
-  if (v >= 1e9) return `${(v / 1e9).toFixed(1).replace(/\.0$/, '')}B`;
-  if (v >= 1e6) return `${(v / 1e6).toFixed(1).replace(/\.0$/, '')}M`;
-  if (v >= 1e3) return `${(v / 1e3).toFixed(1).replace(/\.0$/, '')}K`;
-  return v.toString();
+const forecastColors = {
+  linear: '#00BFFF',
+  score: '#FF69B4',
+  ai: '#32CD32',
+  race: '#FFA500',
 };
 
-const CustomLegend = ({ selectedCat }) => {
-  const categoriesToShow =
-    selectedCat === 'All' ? ['2W', '3W', 'PV', 'TRAC', 'CV', 'Total'] : [selectedCat];
+const categories = ['2W', '3W', 'PV', 'TRAC', 'Truck', 'Bus', 'CV', 'Total'];
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 20,
-        gap: 20,
-        color: '#fff',
-      }}
-    >
-      {categoriesToShow.map(cat => (
-        <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 20, height: 3, background: colors[cat], borderRadius: 2 }} />
-          <span style={{ fontSize: 13 }}>{cat}</span>
-        </div>
+const abbreviate = v =>
+  v >= 1e9 ? `${(v / 1e9).toFixed(1).replace(/\.0$/, '')}B` :
+    v >= 1e6 ? `${(v / 1e6).toFixed(1).replace(/\.0$/, '')}M` :
+      v >= 1e3 ? `${(v / 1e3).toFixed(1).replace(/\.0$/, '')}K` : v.toString();
+
+const CustomTooltip = ({ active, payload, label }) =>
+  active && payload?.length ? (
+    <div style={{ background: '#333', color: '#fff', padding: 10, borderRadius: 5 }}>
+      <p style={{ margin: '0 0 4px 0' }}>{label}</p>
+      {payload.map((e, i) => (
+        <p key={i} style={{ color: e.color, fontSize: 12, margin: 0 }}>
+          {e.name}: {e.value?.toLocaleString()}
+        </p>
       ))}
     </div>
-  );
-};
+  ) : null;
 
+const CustomLegend = ({ selectedCat }) => (
+  <div style={{
+    display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 20,
+    color: '#fff', marginTop: 16
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ width: 20, height: 3, background: catColors[selectedCat], borderRadius: 2 }} />
+      <span style={{ fontSize: 13 }}>{selectedCat}</span>
+    </div>
+  </div>
+);
 
 const CustomLineChart = () => {
-  const [selectedCat, setSelectedCat] = useState('All');
-  const [chartHeight, setChartHeight] = useState(420);
   const [data, setData] = useState([]);
-  const chartWrapperRef = useRef(null);
+  const [selectedCat, setCat] = useState('Total');
+  const [chartHeight, setHeight] = useState(420);
 
   useEffect(() => {
-    const updateHeight = () => {
-      const isMobile = window.innerWidth < 768;
-      setChartHeight(isMobile ? 280 : 420);
-    };
-    updateHeight();
-    window.addEventListener('resize', updateHeight);
-    return () => window.removeEventListener('resize', updateHeight);
+    const resize = () => setHeight(window.innerWidth < 768 ? 280 : 420);
+    resize(); window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
   }, []);
 
   useEffect(() => {
-    async function fetchData() {
+    const linReg = (x, y) => {
+      const n = x.length, sx = x.reduce((a, b) => a + b, 0), sy = y.reduce((a, b) => a + b, 0),
+        sxy = x.reduce((s, xi, i) => s + xi * y[i], 0),
+        sx2 = x.reduce((s, xi) => s + xi * xi, 0),
+        den = n * sx2 - sx * sx || 1,
+        m = (n * sxy - sx * sy) / den,
+        b = sy / n - m * sx / n;
+      return idx => b + m * idx;
+    };
+
+    const scoreForecast = (arr, w = [0.5, 0.3, 0.2]) =>
+      w.reduce((s, wt, i) => s + wt * arr[arr.length - 1 - i], 0);
+
+    const expoSmooth = (arr, a = 0.5) => {
+      let f = arr[0];
+      return () => { f = a * arr.at(-1) + (1 - a) * f; return f; };
+    };
+
+    (async () => {
       try {
         const res = await fetch('/api/overall');
-        const json = await res.json();
+        const raw = await res.json();
+        const today = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-        const transformed = json.map(item => {
-          const [year, month] = item.month.split('-');
-          const formattedMonth = `${monthNames[parseInt(month, 10) - 1]}${year.slice(2)}`;
-          return {
-            month: formattedMonth,
-            '2W': item['2-wheeler'],
-            '3W': item['3-wheeler'],
-            PV: item.passenger,
-            TRAC: item.tractor,
-            CV: item.cv,
-            Total: item.total,
+        const rows = raw.map((r, i) => ({ ...r, idx: i, date: new Date(`${r.month}-01`) }));
+
+        const cats = [
+          { key: '2W', src: '2-wheeler' },
+          { key: '3W', src: '3-wheeler' },
+          { key: 'PV', src: 'passenger' },
+          { key: 'TRAC', src: 'tractor' },
+          { key: 'Truck', src: 'truck' },
+          { key: 'Bus', src: 'bus' },
+          { key: 'CV', src: 'cv' },
+          { key: 'Total', src: 'total' }
+        ];
+
+        const forecasters = {};
+        cats.forEach(({ key, src }) => {
+          const hist = rows.filter(r => r.date <= today);
+          const idxArr = hist.map(r => r.idx);
+          const valArr = hist.map(r => r[src]);
+          forecasters[key] = {
+            linear: linReg(idxArr, valArr),
+            score: () => scoreForecast(valArr),
+            ai: expoSmooth(valArr)
           };
+        });
+
+        const lastHistIdx = Math.max(...rows.filter(r => r.date <= today).map(r => r.idx));
+
+        const transformed = rows.map(r => {
+          const [y, m] = r.month.split('-');
+          const label = `${monthNames[+m - 1]}${y.slice(2)}`;
+          const out = { month: label };
+
+          cats.forEach(({ key, src }) => {
+            const isPast = r.date < today;
+            const isPresent = r.date.getTime() === today.getTime();
+            const isFuture = r.date > today;
+
+            out[key] = (isPast || isPresent) ? r[src] : null;
+
+            const f = forecasters[key];
+
+            if (isFuture) {
+              const lin = f.linear(r.idx);
+              const sco = f.score();
+              const ai = f.ai();
+              const race = (lin + sco + ai) / 3 * 1.02;
+              out[`${key}_forecast_linear`] = lin;
+              out[`${key}_forecast_score`] = sco;
+              out[`${key}_forecast_ai`] = ai;
+              out[`${key}_forecast_race`] = race;
+            } else if (r.idx === lastHistIdx) {
+              const anchor = r[src];
+              out[`${key}_forecast_linear`] =
+                out[`${key}_forecast_score`] =
+                out[`${key}_forecast_ai`] =
+                out[`${key}_forecast_race`] = anchor;
+            } else {
+              out[`${key}_forecast_linear`] =
+                out[`${key}_forecast_score`] =
+                out[`${key}_forecast_ai`] =
+                out[`${key}_forecast_race`] = null;
+            }
+          });
+
+          return out;
         });
 
         setData(transformed);
       } catch (err) {
-        console.error('Failed to fetch chart data:', err);
+        console.error('fetch/forecast error', err);
       }
-    }
-
-    fetchData();
+    })();
   }, []);
 
-  const splitData = useMemo(() => {
-    const now = new Date();
-    const currentMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    return data.map(d => {
-      const [monStr, yrStr] = [d.month.slice(0, 3), d.month.slice(3)];
-      const entryDate = new Date(`20${yrStr}`, monthNames.indexOf(monStr));
-      const isCurrentMonth = entryDate.getFullYear() === currentMonthDate.getFullYear() &&
-        entryDate.getMonth() === currentMonthDate.getMonth();
-      const isPast = entryDate < currentMonthDate;
-
-      const entry = { month: d.month };
-
-      for (const cat of ['2W', '3W', 'PV', 'TRAC', 'CV', 'Total']) {
-        entry[`${cat}_past`] = isPast || isCurrentMonth ? d[cat] : null;
-        entry[`${cat}_future`] = isCurrentMonth || !isPast ? d[cat] : null;
-      }
-
-      return entry;
-    });
-  }, [data]);
-
   return (
-    <div style={{ position: 'relative', width: '100%', zIndex: 0 }} ref={chartWrapperRef}>
+    <div style={{ position: 'relative', width: '100%', zIndex: 0 }}>
       <div style={{ marginBottom: 16, textAlign: 'left' }}>
         <select
           value={selectedCat}
-          onChange={e => setSelectedCat(e.target.value)}
-          style={{ padding: '4px 8px', fontSize: 14, color:'black' }}
+          onChange={e => setCat(e.target.value)}
+          style={{ padding: '4px 8px', fontSize: 14, color: 'black' }}
         >
-          {categories.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
+          {categories.map(c => <option key={c}>{c}</option>)}
         </select>
       </div>
 
       <ResponsiveContainer width="100%" height={chartHeight}>
-        <LineChart data={splitData} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+        <LineChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
           <defs>
-            {categories.filter(cat => cat !== 'All').map(cat => (
-              <linearGradient id={`${cat}-grad`} x1="0" y1="0" x2="0" y2="1" key={cat}>
-                <stop offset="0%" stopColor={colors[cat]} stopOpacity={0.9} />
-                <stop offset="100%" stopColor={colors[cat]} stopOpacity={0.3} />
+            {categories.map(cat => (
+              <linearGradient id={`${cat}-grad`} key={cat} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={catColors[cat]} stopOpacity={0.9} />
+                <stop offset="100%" stopColor={catColors[cat]} stopOpacity={0.3} />
               </linearGradient>
             ))}
           </defs>
 
           <CartesianGrid stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
-          <XAxis
-            dataKey="month"
-            axisLine={false}
-            tickLine={false}
+          <XAxis dataKey="month" axisLine={false} tickLine={false}
+            tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }} />
+          <YAxis axisLine={false} tickLine={false}
             tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
-          />
-          <YAxis
-            axisLine={false}
-            tickLine={false}
-            tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
-            domain={['auto', 'auto']}
-            tickFormatter={abbreviate}
-            tickCount={5}
-            interval="preserveStartEnd"
-          />
-          <Brush
-            dataKey="month"
-            startIndex={0}
-            endIndex={splitData.length - 1}
-            height={12}
-            stroke="rgba(255,255,255,0.4)"
-            fill="rgba(255,255,255,0.08)"
-            strokeWidth={1}
-            tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 9 }}
-            tickMargin={4}
-            traveller={
-              <Rectangle
-                width={6}
-                height={16}
-                radius={3}
-                fill="rgba(255,255,255,0.6)"
-                stroke="rgba(255,255,255,0.4)"
-                strokeWidth={1}
-                cursor="ew-resize"
-              />
-            }
-          />
+            tickFormatter={abbreviate} tickCount={5}
+            domain={['auto', 'auto']} interval="preserveStartEnd" />
+          <Brush dataKey="month" height={12} stroke="rgba(255,255,255,0.4)" fill="rgba(255,255,255,0.08)"
+            strokeWidth={1} tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 9 }} tickMargin={4}
+            traveller={<Rectangle width={6} height={16} radius={3}
+              fill="rgba(255,255,255,0.6)" stroke="rgba(255,255,255,0.4)"
+              strokeWidth={1} cursor="ew-resize" />} />
           <Tooltip content={<CustomTooltip />} />
 
-          {(selectedCat === 'All' ? ['2W', '3W', 'PV', 'TRAC', 'CV', 'Total'] : [selectedCat]).map(cat => (
-            <React.Fragment key={cat}>
-              <Line
-                type="linear"
-                dataKey={`${cat}_past`}
-                name={`Historical ${cat}`}
-                stroke={`url(#${cat}-grad)`}
-                strokeWidth={1}
-                dot={{ r: 2, fill: colors[cat] }}
-                connectNulls
-                isAnimationActive={false}
-              />
-              <Line
-                type="linear"
-                dataKey={`${cat}_future`}
-                name={`Forecast ${cat}`}
-                stroke={colors[cat] + '80'}
-                strokeWidth={1}
-                strokeDasharray="5 5"
-                dot={false}
-                connectNulls
-                isAnimationActive={false}
-              />
-            </React.Fragment>
-          ))}
+          <Line type="linear" dataKey={selectedCat} name={`Historical ${selectedCat}`}
+            stroke={`url(#${selectedCat}-grad)`} strokeWidth={1.8}
+            dot={{ r: 2, fill: catColors[selectedCat] }}
+            connectNulls={false} isAnimationActive={false} />
+
+          <Line type="linear" dataKey={`${selectedCat}_forecast_linear`} name={`Linear ${selectedCat}`}
+            stroke={forecastColors.linear} strokeWidth={1.5}
+            strokeDasharray="5 2" dot={false} connectNulls />
+          <Line type="linear" dataKey={`${selectedCat}_forecast_score`} name={`Score ${selectedCat}`}
+            stroke={forecastColors.score} strokeWidth={1.5}
+            strokeDasharray="2 2" dot={false} connectNulls />
+          <Line type="linear" dataKey={`${selectedCat}_forecast_ai`} name={`AI ${selectedCat}`}
+            stroke={forecastColors.ai} strokeWidth={1.5}
+            strokeDasharray="4 4" dot={false} connectNulls />
+          <Line type="linear" dataKey={`${selectedCat}_forecast_race`} name={`Race ${selectedCat}`}
+            stroke={forecastColors.race} strokeWidth={1.5}
+            strokeDasharray="1 6" dot={false} connectNulls />
         </LineChart>
       </ResponsiveContainer>
 

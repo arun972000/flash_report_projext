@@ -1,194 +1,233 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  Tooltip,
-  CartesianGrid,
-  Brush,
-  Rectangle,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Brush, Rectangle,
 } from 'recharts';
 import '../styles/chart.css';
 
-const monthMap = {
-  '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr',
-  '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug',
-  '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec',
+const catColors = {
+  '2W': '#ffffff',
+  '3W': '#ff1f23',
+  PV: '#FFCE56',
+  TRAC: '#4BC0C0',
+  Truck: '#00CED1',
+  Bus: '#DC143C',
+  CV: '#9966FF',
+  Total: '#FF9F40',
 };
 
-function formatMonth(input) {
-  const [year, month] = input.split('-');
-  return `${monthMap[month]}${year.slice(2)}`;
-}
-
-const abbreviate = (v) => {
-  if (v >= 1e9) return `${(v / 1e9).toFixed(1).replace(/\.0$/, '')}B`;
-  if (v >= 1e6) return `${(v / 1e6).toFixed(1).replace(/\.0$/, '')}M`;
-  if (v >= 1e3) return `${(v / 1e3).toFixed(1).replace(/\.0$/, '')}K`;
-  return v.toString();
+const forecastColors = {
+  linear: '#00BFFF',
+  score: '#FF69B4',
+  ai: '#32CD32',
+  race: '#FFA500',
 };
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload || !payload.length) return null;
-  return (
+const categories = ['2W', '3W', 'PV', 'TRAC', 'Truck', 'Bus', 'CV', 'Total'];
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const abbreviate = v =>
+  v >= 1e9 ? `${(v / 1e9).toFixed(1).replace(/\.0$/, '')}B` :
+    v >= 1e6 ? `${(v / 1e6).toFixed(1).replace(/\.0$/, '')}M` :
+      v >= 1e3 ? `${(v / 1e3).toFixed(1).replace(/\.0$/, '')}K` : v.toString();
+
+const CustomTooltip = ({ active, payload, label }) =>
+  active && payload?.length ? (
     <div style={{ background: '#333', color: '#fff', padding: 10, borderRadius: 5 }}>
-      <p>{label}</p>
-      {payload.map((entry, index) => (
-        <p key={index} style={{ color: entry.color }}>
-          {entry.name}: {entry.value?.toLocaleString()}
+      <p style={{ margin: '0 0 4px 0' }}>{label}</p>
+      {payload.map((e, i) => (
+        <p key={i} style={{ color: e.color, fontSize: 12, margin: 0 }}>
+          {e.name}: {e.value?.toLocaleString()}
         </p>
       ))}
     </div>
-  );
-};
+  ) : null;
 
-const ThreeWheelerForecast = () => {
-  const [windowWidth, setWindowWidth] = useState(0);
+const CustomLegend = ({ selectedCat }) => (
+  <div style={{
+    display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 20,
+    color: '#fff', marginTop: 16
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ width: 20, height: 3, background: catColors[selectedCat], borderRadius: 2 }} />
+      <span style={{ fontSize: 13 }}>{selectedCat}</span>
+    </div>
+  </div>
+);
+
+const CustomLineChart = () => {
   const [data, setData] = useState([]);
+  const [selectedCat, setCat] = useState('3W');
+  const [chartHeight, setHeight] = useState(420);
 
   useEffect(() => {
-    const updateSize = () => setWindowWidth(window.innerWidth);
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    const resize = () => setHeight(window.innerWidth < 768 ? 280 : 420);
+    resize(); window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
   }, []);
 
   useEffect(() => {
-    fetch('/api/overall')
-      .then(res => res.json())
-      .then(apiData => {
-        const now = new Date();
-        const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const linReg = (x, y) => {
+      const n = x.length, sx = x.reduce((a, b) => a + b, 0), sy = y.reduce((a, b) => a + b, 0),
+        sxy = x.reduce((s, xi, i) => s + xi * y[i], 0),
+        sx2 = x.reduce((s, xi) => s + xi * xi, 0),
+        den = n * sx2 - sx * sx || 1,
+        m = (n * sxy - sx * sy) / den,
+        b = sy / n - m * sx / n;
+      return idx => b + m * idx;
+    };
 
-        const chartData = apiData.map(item => {
-          const entryDate = new Date(item.month);
-          const label = formatMonth(item.month);
-          const isCurrent = entryDate.getFullYear() === currentMonth.getFullYear() &&
-            entryDate.getMonth() === currentMonth.getMonth();
-          const isPast = entryDate < currentMonth;
+    const scoreForecast = (arr, w = [0.5, 0.3, 0.2]) =>
+      w.reduce((s, wt, i) => s + wt * arr[arr.length - 1 - i], 0);
 
-          const val = item['3-wheeler'] || 0;
+    const expoSmooth = (arr, a = 0.5) => {
+      let f = arr[0];
+      return () => { f = a * arr.at(-1) + (1 - a) * f; return f; };
+    };
 
-          return {
-            month: label,
-            past3W: isPast || isCurrent ? val : null,
-            future3W: isCurrent || !isPast ? val : null,
+    (async () => {
+      try {
+        const res = await fetch('/api/overall');
+        const raw = await res.json();
+        const today = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+        const rows = raw.map((r, i) => ({ ...r, idx: i, date: new Date(`${r.month}-01`) }));
+
+        const cats = [
+          { key: '2W', src: '2-wheeler' },
+          { key: '3W', src: '3-wheeler' },
+          { key: 'PV', src: 'passenger' },
+          { key: 'TRAC', src: 'tractor' },
+          { key: 'Truck', src: 'truck' },
+          { key: 'Bus', src: 'bus' },
+          { key: 'CV', src: 'cv' },
+          { key: 'Total', src: 'total' }
+        ];
+
+        const forecasters = {};
+        cats.forEach(({ key, src }) => {
+          const hist = rows.filter(r => r.date <= today);
+          const idxArr = hist.map(r => r.idx);
+          const valArr = hist.map(r => r[src]);
+          forecasters[key] = {
+            linear: linReg(idxArr, valArr),
+            score: () => scoreForecast(valArr),
+            ai: expoSmooth(valArr)
           };
         });
 
-        setData(chartData);
-      })
-      .catch(e => {
-        console.error('Error fetching data:', e);
-        setData([]);
-      });
+        const lastHistIdx = Math.max(...rows.filter(r => r.date <= today).map(r => r.idx));
+
+        const transformed = rows.map(r => {
+          const [y, m] = r.month.split('-');
+          const label = `${monthNames[+m - 1]}${y.slice(2)}`;
+          const out = { month: label };
+
+          cats.forEach(({ key, src }) => {
+            const isPast = r.date < today;
+            const isPresent = r.date.getTime() === today.getTime();
+            const isFuture = r.date > today;
+
+            out[key] = (isPast || isPresent) ? r[src] : null;
+
+            const f = forecasters[key];
+
+            if (isFuture) {
+              const lin = f.linear(r.idx);
+              const sco = f.score();
+              const ai = f.ai();
+              const race = (lin + sco + ai) / 3 * 1.02;
+              out[`${key}_forecast_linear`] = lin;
+              out[`${key}_forecast_score`] = sco;
+              out[`${key}_forecast_ai`] = ai;
+              out[`${key}_forecast_race`] = race;
+            } else if (r.idx === lastHistIdx) {
+              const anchor = r[src];
+              out[`${key}_forecast_linear`] =
+                out[`${key}_forecast_score`] =
+                out[`${key}_forecast_ai`] =
+                out[`${key}_forecast_race`] = anchor;
+            } else {
+              out[`${key}_forecast_linear`] =
+                out[`${key}_forecast_score`] =
+                out[`${key}_forecast_ai`] =
+                out[`${key}_forecast_race`] = null;
+            }
+          });
+
+          return out;
+        });
+
+        setData(transformed);
+      } catch (err) {
+        console.error('fetch/forecast error', err);
+      }
+    })();
   }, []);
-
-  const isMobile = windowWidth <= 640;
-  const chartHeight = isMobile ? 280 : 420;
-
-  const color3W = '#ff1f23';
-  const colorForecast3W = `${color3W}80`;
 
   return (
     <div style={{ position: 'relative', width: '100%', zIndex: 0 }}>
-      <ResponsiveContainer width="100%" height={chartHeight}>
-        <LineChart
-          data={data}
-          margin={{ top: 20, right: 20, bottom: 20, left: 0 }}
+      <div style={{ marginBottom: 16, textAlign: 'left' }}>
+        <select
+          value={selectedCat}
+          onChange={e => setCat(e.target.value)}
+          style={{ padding: '4px 8px', fontSize: 14, color: 'black' }}
         >
+          {categories.map(c => <option key={c}>{c}</option>)}
+        </select>
+      </div>
+
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <LineChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+          <defs>
+            {categories.map(cat => (
+              <linearGradient id={`${cat}-grad`} key={cat} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={catColors[cat]} stopOpacity={0.9} />
+                <stop offset="100%" stopColor={catColors[cat]} stopOpacity={0.3} />
+              </linearGradient>
+            ))}
+          </defs>
+
           <CartesianGrid stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
-          <XAxis
-            dataKey="month"
-            axisLine={false}
-            tickLine={false}
-            tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
-          />
-          <YAxis
-            axisLine={false}
-            tickLine={false}
-            tick={{ fill: '#FFC107', fontSize: 12 }}
-            domain={['auto', 'auto']}
-            tickFormatter={abbreviate}
-            tickCount={5}
-            interval="preserveStartEnd"
-          />
-          <Brush
-            dataKey="month"
-            startIndex={0}
-            endIndex={data.length - 1}
-            height={12}
-            stroke="rgba(255,255,255,0.4)"
-            fill="rgba(255,255,255,0.08)"
-            strokeWidth={1}
-            tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 9 }}
-            tickMargin={4}
-            tickFormatter={d => d}
-            traveller={
-              <Rectangle
-                width={6}
-                height={16}
-                radius={3}
-                fill="rgba(255,255,255,0.6)"
-                stroke="rgba(255,255,255,0.4)"
-                strokeWidth={1}
-                cursor="ew-resize"
-              />
-            }
-          />
+          <XAxis dataKey="month" axisLine={false} tickLine={false}
+            tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }} />
+          <YAxis axisLine={false} tickLine={false}
+            tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
+            tickFormatter={abbreviate} tickCount={5}
+            domain={['auto', 'auto']} interval="preserveStartEnd" />
+          <Brush dataKey="month" height={12} stroke="rgba(255,255,255,0.4)" fill="rgba(255,255,255,0.08)"
+            strokeWidth={1} tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 9 }} tickMargin={4}
+            traveller={<Rectangle width={6} height={16} radius={3}
+              fill="rgba(255,255,255,0.6)" stroke="rgba(255,255,255,0.4)"
+              strokeWidth={1} cursor="ew-resize" />} />
           <Tooltip content={<CustomTooltip />} />
 
-          <Line
-            type="linear"
-            dataKey="past3W"
-            name="Historical 3W"
-            stroke={color3W}
-            strokeWidth={1}
-            dot={{ r: 1, fill: color3W }}
-            connectNulls
-            isAnimationActive={false}
-          />
-          <Line
-            type="linear"
-            dataKey="future3W"
-            name="Forecast 3W"
-            stroke={colorForecast3W}
-            strokeWidth={1}
-            strokeDasharray="5 5"
-            dot={false}
-            connectNulls
-            isAnimationActive={false}
-          />
+          <Line type="linear" dataKey={selectedCat} name={`Historical ${selectedCat}`}
+            stroke={`url(#${selectedCat}-grad)`} strokeWidth={1.8}
+            dot={{ r: 2, fill: catColors[selectedCat] }}
+            connectNulls={false} isAnimationActive={false} />
+
+          <Line type="linear" dataKey={`${selectedCat}_forecast_linear`} name={`Linear ${selectedCat}`}
+            stroke={forecastColors.linear} strokeWidth={1.5}
+            strokeDasharray="5 2" dot={false} connectNulls />
+          <Line type="linear" dataKey={`${selectedCat}_forecast_score`} name={`Score ${selectedCat}`}
+            stroke={forecastColors.score} strokeWidth={1.5}
+            strokeDasharray="2 2" dot={false} connectNulls />
+          <Line type="linear" dataKey={`${selectedCat}_forecast_ai`} name={`AI ${selectedCat}`}
+            stroke={forecastColors.ai} strokeWidth={1.5}
+            strokeDasharray="4 4" dot={false} connectNulls />
+          <Line type="linear" dataKey={`${selectedCat}_forecast_race`} name={`Race ${selectedCat}`}
+            stroke={forecastColors.race} strokeWidth={1.5}
+            strokeDasharray="1 6" dot={false} connectNulls />
         </LineChart>
       </ResponsiveContainer>
 
-      <div style={{
-        marginTop: 24,
-        display: 'flex',
-        justifyContent: 'center',
-        gap: 24,
-        color: '#fff',
-        fontSize: 12
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 24, height: 3, background: color3W, borderRadius: 2 }} />
-          <span>Historical 3W</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{
-            width: 24,
-            height: 0,
-            borderTop: `2px dashed ${colorForecast3W}`,
-          }} />
-          <span>Forecast 3W</span>
-        </div>
-      </div>
+      <CustomLegend selectedCat={selectedCat} />
     </div>
   );
 };
 
-export default ThreeWheelerForecast;
+export default CustomLineChart;

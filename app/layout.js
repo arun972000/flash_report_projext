@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import "bootstrap/dist/css/bootstrap.css";
 import "antd/dist/reset.css";
+import {AuthModalProvider} from '@/utils/AuthModalcontext'
 
 import BootstrapClient from "./BootstrapClient";
 
@@ -22,7 +23,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={inter.variable}>
         <BootstrapClient />
-        {children}
+         <AuthModalProvider>{children}</AuthModalProvider>
       </body>
     </html>
   );

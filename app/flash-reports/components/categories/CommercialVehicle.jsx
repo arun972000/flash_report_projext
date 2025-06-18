@@ -233,8 +233,8 @@ const CommercialVehicle = async () => {
                         <div className='col-12 mt-5'>
                             <h3>Commercial Vehicles Segmental Split</h3>
                             {/* <CustomStackBarChart /> */}
-                            <CommercialVehicleBarChart data={mergedDataCV}/>
-                            {/* <StaticCommercialSegmentChart /> */}
+                            {/* <CommercialVehicleBarChart data={mergedDataCV}/> */}
+                            <StaticCommercialSegmentChart />
                         </div>
 
                         <div className='col-12'>
@@ -248,19 +248,19 @@ const CommercialVehicle = async () => {
                             <h2 className="text-center mb-4" style={{ fontWeight: '700' }}>
                                 Application Segments
                             </h2>
-                            <div className='col-12 mt-3'>
+                            {/* <div className='col-12 mt-3'>
                                 <Link href='https://raceautoindia.com/subscription'><div style={{ width: '100%', position: 'relative', aspectRatio: '4.18/1', border: '1px solid white' }}>
                                     <Image src="/images/fr-table.jpg" alt='flash-report-table' fill />
                                 </div></Link>
-                            </div>
-                            {/* <div className="d-flex justify-content-center gap-5 flex-wrap">
+                            </div> */}
+                            <div className="d-flex justify-content-center gap-5 flex-wrap">
                                <Link
-                                    href="/bus"
+                                    href="/flash-reports/bus"
                                     className="text-decoration-none text-dark text-center segment-card"
                                 >
                                     <div className="icon-circle bg-primary text-white">
                                         <img
-                                            src="/images/bus.png"   // adjust path if needed
+                                            src="/images/bus 2.png"   // adjust path if needed
                                             alt="Bus"
                                             style={{ width: 50, height: 50, objectFit: 'contain' }}
                                         />
@@ -270,7 +270,7 @@ const CommercialVehicle = async () => {
 
                               
                                 <Link
-                                    href="/truck"
+                                    href="/flash-reports/truck"
                                     className="text-decoration-none text-dark text-center segment-card"
                                 >
                                     <div className="icon-circle bg-success text-white">
@@ -282,7 +282,7 @@ const CommercialVehicle = async () => {
                                     </div>
                                     <div className="mt-2 fw-semibold fs-5" style={{ color: 'white' }}>Truck</div>
                                 </Link>
-                            </div> */}
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -1,7 +1,8 @@
 import dynamic from "next/dynamic";
 import React from 'react';
 import BusApplication from "../application-split/Bus";
-const BusOEMChart = dynamic(() => import("../charts/BusOEM"), { ssr: false });
+import BusOEMChart from '../charts/DummyStackBarBus'
+// const BusOEMChart = dynamic(() => import("../charts/BusOEM"), { ssr: false });
 const BusEV = dynamic(() => import("../ev/Bus-EV"), { ssr: false });
 const BusForecast = dynamic(() => import("../Forecast-chart/Bus"), { ssr: false });
 import './category.css'
@@ -299,9 +300,9 @@ const BusOEM = async () => {
                         <BusOEMChart />
                     </div>
 
-                    <div className="col-12 mt-5">
+                    {/* <div className="col-12 mt-5">
                         <BusEV />
-                    </div>
+                    </div> */}
 
                     <div className="col-12">
                         <h2 className="mt-4">
@@ -310,12 +311,12 @@ const BusOEM = async () => {
                         <BusForecast />
                     </div>
 
-                    <div className="col-12">
+                    {/* <div className="col-12">
                         <h2 className="mt-4">
                             Application Chart
                         </h2>
                         <BusApplication />
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>

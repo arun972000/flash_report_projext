@@ -91,7 +91,7 @@ const ChartWithComparison = ({ data, current, compare, title, showArrow }) => {
       >
         <strong>{name}</strong>
         <br />
-        Value: {value.toFixed(2)}%{" "}
+        Value: {value.toFixed(2)}%{" "}%
         <span style={{ color: arrowColor, fontWeight: "bold" }}>{symbol}</span>
       </div>
     );

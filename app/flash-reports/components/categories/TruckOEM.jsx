@@ -5,6 +5,7 @@ import TruckPieChart from '../charts/Piechart/PieChart'
 const TruckOEMChart = dynamic(() => import("../charts/TruckOEM"), { ssr: false });
 const TruckEV = dynamic(() => import("../ev/Truck-EV"), { ssr: false });
 const TruckForecast = dynamic(() => import("../Forecast-chart/Truck"), { ssr: false });
+import TruckOEMBarChart from '../charts/DummyStackBarTruck'
 import './category.css'
 
 
@@ -283,10 +284,10 @@ const TruckOEM = async () => {
     const twoWheelerTextRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`, { cache: 'no-store' })
     const twoWheelerText = await twoWheelerTextRes.json();
 
-        const mergedData = await fetchTruckData();
-    const mergedDataMarket = await fetchTruckMarketShareData();
-    const mergedDataApp = await fetchTruckAppData();
-    const mergdedDataEV = await fetchTruckEVData();
+    //     const mergedData = await fetchTruckData();
+    // const mergedDataMarket = await fetchTruckMarketShareData();
+    // const mergedDataApp = await fetchTruckAppData();
+    // const mergdedDataEV = await fetchTruckEVData();
 
     return (
         <div className='px-lg-4'>
@@ -305,12 +306,13 @@ const TruckOEM = async () => {
 
                     <div className='col-12 mt-3'>
                         {/* <TruckOEMChart /> */}
-                        <TruckPieChart />
+                        {/* <TruckPieChart /> */}
+                        <TruckOEMBarChart/>
                     </div>
 
-                    <div className="col-12 mt-5">
+                    {/* <div className="col-12 mt-5">
                         <TruckEV />
-                    </div>
+                    </div> */}
 
                     <div className="col-12">
                         <h2 className="mt-4">
@@ -319,12 +321,12 @@ const TruckOEM = async () => {
                         <TruckForecast />
                     </div>
 
-                    <div className="col-12">
+                    {/* <div className="col-12">
                         <h2 className="mt-4">
                             Application Chart
                         </h2>
                         <TruckApplication />
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>
