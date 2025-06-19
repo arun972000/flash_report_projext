@@ -42,7 +42,7 @@ function Analytics() {
             opportunities for OEMs, suppliers, fleet operators, and industry
             analysts.
           </p>
-          <Link href='https://raceautoindia.com/subscription'><button style={{ background:"#001624; ",width:"100px",borderRadius:"7px" }} className="text-white p-2 mt-2">Subscribe</button></Link>
+          <Link href='https://raceautoindia.com/subscription'><button style={{ background:"#001624" ,width:"100px",borderRadius:"7px" }} className="text-white p-2 mt-2">Subscribe</button></Link>
         </div>
       </div>
     </div>
@@ -83,7 +83,7 @@ function Analytics() {
             opportunities for OEMs, suppliers, fleet operators, and industry
             analysts.
           </p>
-          <Link href='https://raceautoindia.com/subscription'><button style={{ background:"#001624; ",width:"100px",borderRadius:"7px" }} className="text-white p-2 mt-2">Subscribe</button></Link>
+          <Link href='https://raceautoindia.com/subscription'><button style={{ background:"#001624",width:"100px",borderRadius:"7px" }} className="text-white p-2 mt-2">Subscribe</button></Link>
         </div>
       </div>
     </div>
@@ -124,7 +124,7 @@ function Analytics() {
             opportunities for OEMs, suppliers, fleet operators, and industry
             analysts.
           </p>
-          <Link href='https://raceautoindia.com/subscription'><button style={{ background:"#001624; ",width:"100px",borderRadius:"7px" }} className="text-white p-2 mt-2 sub-but">Subscribe</button></Link>
+          <Link href='https://raceautoindia.com/subscription'><button style={{ background:"#001624",width:"100px",borderRadius:"7px" }} className="text-white p-2 mt-2 sub-but">Subscribe</button></Link>
         </div>
       </div>
     </div>

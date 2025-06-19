@@ -50,7 +50,7 @@ const LoginForm = ({ onSuccess }) => {
         </Alert>
       )}
 
-      <p className="text-center text-muted small mb-3">
+      {/* <p className="text-center text-muted small mb-3">
         Don't have an account?{' '}
         <a
           href="https://raceautoindia.com"
@@ -64,7 +64,7 @@ const LoginForm = ({ onSuccess }) => {
         >
           Register at RaceAutoIndia.com
         </a>
-      </p>
+      </p> */}
 
       <Formik
         initialValues={{ email: '', password: '' }}

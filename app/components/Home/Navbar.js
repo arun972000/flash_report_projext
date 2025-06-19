@@ -45,12 +45,10 @@ const Navbar = () => {
                     NEWS
                   </Link>
                 </li>
-                {["FLASH REPORT", "MAGAZINE", "CONTACT US"].map((item) => (
+                {["MAGAZINE", "CONTACT US"].map((item) => (
                   <li className="nav-item mx-4" key={item}>
                     <Link
-                      className={`nav-link fw-bold ${
-                        item === "FLASH REPORT" ? "flash-report" : "text-white"
-                      }`}
+                      className="nav-link fw-bold text-white"
                       href={linkMap[item]}
                     >
                       {item}
@@ -60,11 +58,25 @@ const Navbar = () => {
               </ul>
             </div>
 
-            {/* Subscribe + LoginNavButton (Desktop Only) */}
+            {/* Subscribe + Flash Report + Login */}
             <div
               className="position-relative d-flex align-items-center justify-content-end gap-3"
               style={{ minWidth: "150px" }}
             >
+              <Link href={linkMap["FLASH REPORT"]}>
+                <button
+                  className="btn fw-bold text-white flash-thunder-btn"
+                  style={{
+                    borderRadius: "8px",
+                    padding: "6px 14px",
+                    fontSize: "0.9rem",
+                    border: "none",
+                  }}
+                >
+                  ⚡ Flash Report
+                </button>
+              </Link>
+
               <Link href="https://raceautoindia.com/subscription">
                 <button
                   className="btn btn-warning fw-bold text-dark"
@@ -77,10 +89,12 @@ const Navbar = () => {
                   Subscribe
                 </button>
               </Link>
+
               <LoginNavButton />
             </div>
           </div>
         </nav>
+
         <div className="container-fluid bg-light">
           <div className="d-flex align-items-center justify-content-between"></div>
         </div>
@@ -125,7 +139,12 @@ const Navbar = () => {
         <div className="container-fluid bg-dark">
           <div className="d-flex align-items-center justify-content-between">
             <div>
-              <Image src="/images/log.png" alt="Logo" width={170} height={60} />
+              <Image
+                src="/images/race analytics new logo white.png"
+                alt="Logo"
+                width={170}
+                height={60}
+              />
             </div>
             <div
               className="position-relative w-50 w-md-75 w-lg-50"
@@ -287,7 +306,12 @@ const Navbar = () => {
         <div className="container-fluid bg-dark">
           <div className="d-flex align-items-center justify-content-between">
             <div>
-              <Image src="/images/log.png" alt="Logo" width={170} height={60} />
+              <Image
+                src="/images/race analytics new logo white.png"
+                alt="Logo"
+                width={170}
+                height={60}
+              />
             </div>
             <div
               className="position-relative w-50 w-md-75 w-lg-50"
@@ -332,7 +356,7 @@ const Navbar = () => {
               height={40}
             />
           </Link>
-          
+
           <button
             className="navbar-toggler text-white border-0"
             type="button"
@@ -397,7 +421,9 @@ const Navbar = () => {
                 </Link>
               </li>
             ))}
-            <li><LoginNavButton /></li>
+            <li>
+              <LoginNavButton />
+            </li>
           </ul>
         </div>
       </div>
@@ -427,6 +453,34 @@ const Navbar = () => {
             .tab-nav { display: none !important; }
             .desk-nav { display: block !important; }
           }
+           .flash-thunder-btn {
+    background: linear-gradient(135deg, #0d1b2a, #1b263b); /* night blue gradient */
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.4); /* subtle blue glow */
+    animation: flashThunder 3s infinite ease-in-out;
+    transition: transform 0.5s;
+  }
+
+  .flash-thunder-btn:hover {
+    transform: scale(1.05);
+  }
+
+  @keyframes flashThunder {
+    0% {
+      box-shadow: 0 0 4px rgba(0, 123, 255, 0.3);
+    }
+    25% {
+      box-shadow: 0 0 16px rgba(0, 174, 255, 0.6);
+    }
+    50% {
+      box-shadow: 0 0 6px rgba(0, 123, 255, 0.2);
+    }
+    75% {
+      box-shadow: 0 0 20px rgba(0, 174, 255, 0.8);
+    }
+    100% {
+      box-shadow: 0 0 10px rgba(0, 123, 255, 0.4);
+    }
+  }
         `}
       </style>
     </>

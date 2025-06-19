@@ -3,12 +3,14 @@
 import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import AuthModal from "./LoginModal";
-import { useAuthModal } from "@/utils/AuthModalcontext"; // adjust path as needed
+import { useAuthModal } from "@/utils/AuthModalcontext";
+import { useRouter } from "next/navigation"; // ✅ Import useRouter
 
 const LoginNavButton = () => {
   const [token, setToken] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
   const { show, open, close } = useAuthModal();
+  const router = useRouter(); // ✅ Initialize router
 
   useEffect(() => {
     setIsMounted(true);
@@ -22,25 +24,43 @@ const LoginNavButton = () => {
 
   if (!isMounted) return null;
 
-  if (!token) {
-    return (
-      <>
+  const handleLogout = () => {
+    Cookies.remove("authToken");
+    setToken(null);
+    router.refresh(); // ✅ Refresh the current path
+  };
+
+  return (
+    <>
+      {!token ? (
+        <>
+          <button
+            className="nav-btn ms-auto"
+            onClick={open}
+            style={{ cursor: "pointer" }}
+          >
+            Login
+          </button>
+          {show && <AuthModal show={show} onClose={close} />}
+        </>
+      ) : (
         <button
           className="nav-btn ms-auto"
-          onClick={open}
-          style={{ cursor: "pointer" }}
+          onClick={handleLogout}
+          style={{ cursor: "pointer", backgroundColor: "#cc2936", color: "#fff" }}
         >
-          Login
+          Logout
         </button>
-        {show && <AuthModal show={show} onClose={close} />}
-        <style>
-          {`.nav-btn {
+      )}
+
+      <style>
+        {`.nav-btn {
           display: inline-flex;
           align-items: center;
-          gap:6px;
-          background: #1F2023;             /* dark, subtle resting state */
-          color: #15AFE4;                       /* your muted foreground */
-          box-shadow: 0 2px 6px rgba(0,0,0,0.15);  /* light, low-contrast depth */
+          gap: 6px;
+          background: #1F2023;
+          color: #15AFE4;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15);
           border: none;
           padding: 8px 16px;
           border-radius: 8px;
@@ -48,9 +68,9 @@ const LoginNavButton = () => {
           font-weight: 500;
           transition:
             background 300ms ease-in-out,
-            color      300ms ease-in-out,
+            color 300ms ease-in-out,
             box-shadow 300ms ease-in-out,
-            transform  200ms ease-in-out;
+            transform 200ms ease-in-out;
         }
 
         .nav-btn:hover {
@@ -59,12 +79,9 @@ const LoginNavButton = () => {
           box-shadow: 0 6px 16px rgba(0,0,0,0.3);
           transform: translateY(-2px);
         }`}
-        </style>
-      </>
-    );
-  }
-
-  return null;
+      </style>
+    </>
+  );
 };
 
 export default LoginNavButton;
