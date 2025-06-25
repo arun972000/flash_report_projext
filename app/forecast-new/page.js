@@ -197,7 +197,7 @@ export default function ForecastPage() {
 
   // ─── Compute “categories → regions → countries” from contentHierarchyNodes ─
   // Replace <YOUR_PARENT_ID> with actual parent node ID from backend
-  const ROOT_PARENT_ID = "61";
+  const ROOT_PARENT_ID = "76";
 
   // 1) Categories = nodes whose parent_id === ROOT_PARENT_ID
   const categories = useMemo(() => {
