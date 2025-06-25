@@ -104,3 +104,34 @@ export async function DELETE(req) {
   }
 }
 
+export async function PUT(req) {
+  try {
+    const body = await req.json();
+    const { id, name } = body;
+
+    if (!id || !name) {
+      return new Response(JSON.stringify({ error: 'ID and name are required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const [result] = await pool.query(
+      'UPDATE format_hierarchy SET name = ? WHERE id = ?',
+      [name, id]
+    );
+
+    return new Response(JSON.stringify({ message: 'Renamed successfully' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (err) {
+    console.error('PUT /api/formatHierarchy error:', err);
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+
