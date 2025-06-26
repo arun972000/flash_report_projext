@@ -583,7 +583,7 @@ export default function ForecastPage() {
               </button>
               <button
                 className="nav-btn"
-                onClick={() => router.push("/reports")}
+                onClick={() => router.push("/flash-reports")}
               >
                 <FaBolt className="btn-icon" />
                 Flash Reports

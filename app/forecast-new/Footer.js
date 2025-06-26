@@ -8,15 +8,15 @@ export default function Footer() {
         © Copyright 2025 Race Auto India – All Rights Reserved.
       </span>
       <nav className="links">
-        <Link href="/terms" legacyBehavior>
+        <Link href="https://raceautoindia.com/page/terms-conditions" legacyBehavior>
           <a className="footer-link">Terms & Conditions</a>
         </Link>
         <span className="separator">•</span>
-        <Link href="/privacy" legacyBehavior>
+        <Link href="https://raceautoindia.com/page/privacy" legacyBehavior>
           <a className="footer-link">Privacy Policy</a>
         </Link>
         <span className="separator">•</span>
-        <Link href="/contact" legacyBehavior>
+        <Link href="https://raceautoindia.com/page/contact" legacyBehavior>
           <a className="footer-link">
             Contact Us
           </a>
