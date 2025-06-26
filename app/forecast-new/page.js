@@ -566,7 +566,7 @@ export default function ForecastPage() {
                 }}
               >
                 <Image
-                  src="/images/log.png"
+                  src="/images/race analytics new logo white.png"
                   alt="Race Auto India"
                   width={170}
                   height={60}
