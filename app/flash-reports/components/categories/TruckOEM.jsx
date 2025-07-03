@@ -6,6 +6,8 @@ const TruckOEMChart = dynamic(() => import("../charts/TruckOEM"), { ssr: false }
 const TruckEV = dynamic(() => import("../ev/Truck-EV"), { ssr: false });
 const TruckForecast = dynamic(() => import("../Forecast-chart/Truck"), { ssr: false });
 import TruckOEMBarChart from '../charts/DummyStackBarTruck'
+import Truck_PieChart from '../dynamic-charts/OEM_Charts/TruckPieChart'
+import TwoWheelerApp from '../charts/Piechart/AppicationPiechart'
 import './category.css'
 
 
@@ -188,7 +190,7 @@ async function fetchTruckAppData() {
     const monthNodes = hirarchydata
         .filter((n) => n.parent_id === marketShareNode.id)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(-1); // Last 1 months
+        .slice(0,1); // Last 1 months
 
     // Step 4: Merge data by company name
     const merged = {};
@@ -286,7 +288,7 @@ const TruckOEM = async () => {
 
     //     const mergedData = await fetchTruckData();
     // const mergedDataMarket = await fetchTruckMarketShareData();
-    // const mergedDataApp = await fetchTruckAppData();
+    const mergedDataApp = await fetchTruckAppData();
     // const mergdedDataEV = await fetchTruckEVData();
 
     return (
@@ -303,6 +305,9 @@ const TruckOEM = async () => {
                             dangerouslySetInnerHTML={{ __html: twoWheelerText.truck || '<p>content is loading...</p>' }}
                         />
                     </div>
+ <div className='col-12 mt-3'>
+    <Truck_PieChart/>
+ </div>
 
                     <div className='col-12 mt-3'>
                         {/* <TruckOEMChart /> */}
@@ -321,12 +326,12 @@ const TruckOEM = async () => {
                         <TruckForecast />
                     </div>
 
-                    {/* <div className="col-12">
+                     <div className="col-12">
                         <h2 className="mt-4">
                             Application Chart
                         </h2>
-                        <TruckApplication />
-                    </div> */}
+                        <TwoWheelerApp data={mergedDataApp} />
+                    </div>
                 </div>
             </div>
         </div>

@@ -12,6 +12,7 @@ const Tractor_Piechart = dynamic(
 
 import TractorForecast from '../Forecast-chart/Tractor';
 import './category.css'
+import Tractor_PieChart from "../dynamic-charts/OEM_Charts/TractorPieChart";
 
 
 async function fetchTractorData() {
@@ -192,7 +193,7 @@ async function fetchTractorAppData() {
     const monthNodes = hirarchydata
         .filter((n) => n.parent_id === marketShareNode.id)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(-1); // Last 1 months
+        .slice(0,1); // Last 1 months
 
     // Step 4: Merge data by company name
     const merged = {};
@@ -310,8 +311,8 @@ const TractorOEM = async () => {
                     </div>
 
                     <div className='col-12 mt-3'>
-                        {/* <Tractor_Piechart /> */}
-                        <TractorChart piedata={mergedDataMarket}/>
+                        <Tractor_PieChart />
+                        {/* <TractorChart piedata={mergedDataMarket}/> */}
                     </div>
                     {/* <div className="col-12 mt-5">
                         <Tractor_EV />

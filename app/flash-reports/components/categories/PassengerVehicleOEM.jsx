@@ -5,6 +5,7 @@ import React from 'react';
 
 import FourWheelerChart from '../charts/Piechart/PieChart'
 import PassengerVehicleApp from '../charts/Piechart/AppicationPiechart' 
+import PassengerVehicle_Piechart from '../dynamic-charts/OEM_Charts/PassengerVehiclePieChart'
 
 // import FourAwheelerDummy from '../ev/DummyFourwheeler'
 
@@ -21,6 +22,7 @@ import PassengerVehicleApp from '../charts/Piechart/AppicationPiechart'
 import './category.css'
 
 import PassengerForecast from '../Forecast-chart/FourWheeler';
+import FourWheelerEVShare from '../dynamic-charts/ev/FourWheeler-EV'
 
 async function fetchPassengerVehicleData() {
   const token = "your-very-strong-random-string-here";
@@ -200,7 +202,7 @@ async function fetchPassengerVehicleAppData() {
     const monthNodes = hirarchydata
         .filter((n) => n.parent_id === marketShareNode.id)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(-1); // Last 1 months
+        .slice(0,1); // Last 1 months
 
     // Step 4: Merge data by company name
     const merged = {};
@@ -318,8 +320,8 @@ const passengerVehicle = async () => {
                     </div>
 
                     <div className='col-12 mt-3'>
-                        {/* <PassengerVehicle_Piechart /> */}
-                        <FourWheelerChart piedata={mergedDataMarket} />
+                        <PassengerVehicle_Piechart />
+                        {/* <FourWheelerChart piedata={mergedDataMarket} /> */}
                     </div>
 
                     <div className="col-12 mt-5 pt-0">
@@ -331,12 +333,12 @@ const passengerVehicle = async () => {
                     </div>
 
                     <div className="col-12">
-                        {/* <FourWheelerEVShare /> */}
+                        <FourWheelerEVShare />
                         {/* <FourAwheelerDummy/> */}
-                        <div className="text-center">
+                        {/* <div className="text-center">
                             <h4 style={{ color: "#59bea0" }}>PV EV Electric Share Comparison</h4>
                         </div>
-                        <FourWheelerChart piedata={mergedDataEV} />
+                        <FourWheelerChart piedata={mergedDataEV} /> */}
                     </div>
 
                     <div className="col-12">

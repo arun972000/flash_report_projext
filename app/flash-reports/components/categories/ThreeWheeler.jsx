@@ -19,6 +19,8 @@ const ThreeWheelerForecast = dynamic(
     { ssr: false }
 );
 import './category.css'
+import ThreeWheeler_PieChart from "../dynamic-charts/OEM_Charts/ThreeWheeler-PieChart";
+import ThreeWheelerEV from '../dynamic-charts/ev/Threewheeler-EV'
 
 async function fetchThreeWheelerData() {
   const token = "your-very-strong-random-string-here";
@@ -198,7 +200,7 @@ async function fetchThreeWheelerAppData() {
     const monthNodes = hirarchydata
         .filter((n) => n.parent_id === marketShareNode.id)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(-1); // Last 1 months
+        .slice(0,1); // Last 1 months
 
     // Step 4: Merge data by company name
     const merged = {};
@@ -316,16 +318,18 @@ const ThreeWheeler = async () => {
 
                     <div className='col-12 mt-3'>
                         {/* <ThreeWheeler_Piechart /> */}
-                        <ThreeWheelerChart piedata={mergedDataMarket} />
+                        {/* <ThreeWheelerChart piedata={mergedDataMarket} /> */}
                     </div>
+                    <ThreeWheeler_PieChart/>
 
                     <div className="col-12 mt-5">
-                        {/* <ThreeWheelerEV /> */}
-                        <div className="text-center">
+                        <ThreeWheelerEV />
+                        {/* <div className="text-center">
                             <h4 style={{ color: "#59bea0" }}>3-Wheeler EV Electric Share Comparison</h4>
                             <ThreeWheelerChart piedata={mergedDataEV} />
-                        </div>
-                    </div>
+                        </div> */}
+                    </div> 
+                    
 
                     <div className="col-12">
                         <h2 className="mt-4">

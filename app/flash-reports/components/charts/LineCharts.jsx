@@ -29,6 +29,14 @@ const categories = ['2W', '3W', 'PV', 'TRAC', 'Truck', 'Bus', 'CV', 'Total'];
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+const manualRaceForecast = {
+  '2W': [1362478, 1521722, 1695506, 1654187, 1571477.65, 1598300, 1621500, 1659800, 1684000, 2603134.498, 1365987],
+  '3W': [94205, 99386, 99786, 104451, 101250, 102850, 104600, 106400, 106800, 102535.7743, 95789],
+  'PV': [303398, 350603, 349939, 302214, 304800, 312600, 324300, 339400, 424617.9945, 348000, 298567],
+  'TRAC': [63820, 71893, 59606, 71992, 74151.76, 80825.4184, 86000, 89000, 72000, 87401.09155, 63454],
+  'CV': [82763, 94764, 90558, 75615, 72590.4, 78397.632, 76045.70304, 78327.07413, 95559.03044, 86003.1274, 72868],
+};
+
 const abbreviate = v =>
   v >= 1e9 ? `${(v / 1e9).toFixed(1).replace(/\.0$/, '')}B` :
     v >= 1e6 ? `${(v / 1e6).toFixed(1).replace(/\.0$/, '')}M` :
@@ -119,6 +127,7 @@ const CustomLineChart = () => {
           };
         });
 
+        const baseForecastIdx = rows.findIndex(row => row.month === '2025-02');
         const lastHistIdx = Math.max(...rows.filter(r => r.date <= today).map(r => r.idx));
 
         const transformed = rows.map(r => {
@@ -139,11 +148,12 @@ const CustomLineChart = () => {
               const lin = f.linear(r.idx);
               const sco = f.score();
               const ai = f.ai();
-              const race = (lin + sco + ai) / 3 * 1.02;
+              const manualVal = manualRaceForecast[key]?.[r.idx - baseForecastIdx] ?? null;
+
               out[`${key}_forecast_linear`] = lin;
               out[`${key}_forecast_score`] = sco;
               out[`${key}_forecast_ai`] = ai;
-              out[`${key}_forecast_race`] = race;
+              out[`${key}_forecast_race`] = manualVal;
             } else if (r.idx === lastHistIdx) {
               const anchor = r[src];
               out[`${key}_forecast_linear`] =

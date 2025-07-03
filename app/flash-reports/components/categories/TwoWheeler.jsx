@@ -12,60 +12,62 @@ import TwoWheelerForecastChart from '../charts/LineChart/ForecastChart'
 // const TwoWheelerEV = dynamic(() => import("../ev/TwoWheeler-EV"), { ssr: false });
 const TwoWheelerForecast = dynamic(() => import("../Forecast-chart/Twowheeler"), { ssr: false });
 import './category.css'
+import TwoWheelerPieChart from "../dynamic-charts/OEM_Charts/PieChart";
+import TwoWheelerEV from '../dynamic-charts/ev/TwoWheeler-EV'
 
 async function fetchTwoWheelerData() {
-  const token = "your-very-strong-random-string-here";
+    const token = "your-very-strong-random-string-here";
 
-  const [hierarchyRes, volumeRes] = await Promise.all([
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/contentHierarchy`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    }),
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/volumeData`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    }),
-  ]);
+    const [hierarchyRes, volumeRes] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/contentHierarchy`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/volumeData`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+        }),
+    ]);
 
-  const hierarchyData = await hierarchyRes.json();
-  const volumeData = await volumeRes.json();
+    const hierarchyData = await hierarchyRes.json();
+    const volumeData = await volumeRes.json();
 
-  const overallNode = hierarchyData.find(
-    (n) => n.name.toLowerCase() === "overall chart"
-  );
-  if (!overallNode) return [];
+    const overallNode = hierarchyData.find(
+        (n) => n.name.toLowerCase() === "overall chart"
+    );
+    if (!overallNode) return [];
 
-  const buildPath = (id) => {
-    const path = [];
-    let current = hierarchyData.find((n) => n.id === id);
-    while (current) {
-      path.unshift(current.id);
-      current = hierarchyData.find((n) => n.id === current.parent_id);
-    }
-    return path.join(",");
-  };
+    const buildPath = (id) => {
+        const path = [];
+        let current = hierarchyData.find((n) => n.id === id);
+        while (current) {
+            path.unshift(current.id);
+            current = hierarchyData.find((n) => n.id === current.parent_id);
+        }
+        return path.join(",");
+    };
 
-  const streamPath = buildPath(overallNode.id);
-  const matchedEntry = volumeData.find((v) => v.stream === streamPath);
-  if (!matchedEntry) return [];
+    const streamPath = buildPath(overallNode.id);
+    const matchedEntry = volumeData.find((v) => v.stream === streamPath);
+    if (!matchedEntry) return [];
 
-  const segmentData = matchedEntry.data;
-  const twoWheelerKey = Object.keys(segmentData).find(
-    (k) => k.toLowerCase() === "two wheeler"
-  );
+    const segmentData = matchedEntry.data;
+    const twoWheelerKey = Object.keys(segmentData).find(
+        (k) => k.toLowerCase() === "two wheeler"
+    );
 
-  if (!twoWheelerKey) return [];
+    if (!twoWheelerKey) return [];
 
-  const monthValues = segmentData[twoWheelerKey];
+    const monthValues = segmentData[twoWheelerKey];
 
-  return Object.entries(monthValues).map(([month, value]) => ({
-    month,
-    value,
-  }));
+    return Object.entries(monthValues).map(([month, value]) => ({
+        month,
+        value,
+    }));
 }
 
 
@@ -162,6 +164,7 @@ async function fetchTwoWheelerAppData() {
     const hirarchydata = await hierarchyRes.json();
     const volumedata = await volumeRes.json();
 
+
     // Helper: build stream path from node id
     const buildPath = (id) => {
         const path = [];
@@ -191,8 +194,9 @@ async function fetchTwoWheelerAppData() {
     const monthNodes = hirarchydata
         .filter((n) => n.parent_id === marketShareNode.id)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(-1); // Last 1 months
+        .slice(0,1); // Last 1 months
 
+        console.log(monthNodes)
     // Step 4: Merge data by company name
     const merged = {};
 
@@ -210,6 +214,7 @@ async function fetchTwoWheelerAppData() {
     }
 
     return Object.values(merged);
+    
 }
 
 async function fetchTwoWheelerEVData() {
@@ -289,10 +294,11 @@ const TwoWheeler = async () => {
 
     const mergedData = await fetchTwoWheelerData();
     const mergedDataMarket = await fetchTwoWheelerMarketShareData();
-    
+
     const mergedDataApp = await fetchTwoWheelerAppData();
     const mergedDataEV = await fetchTwoWheelerEVData();
 
+// console.log(mergedDataApp)
 
     return (
         <div className='px-lg-4'>
@@ -309,22 +315,25 @@ const TwoWheeler = async () => {
                         />
                     </div>
 
-                    <div className='col-12 mt-3'>
+                    {/* <div className='col-12 mt-3'>
                         <TwoWheelerChart piedata={mergedDataMarket} />
-                    </div>
+                    </div> */}
 
-                    <div className="col-12 mt-5">
+                    <TwoWheelerPieChart />
+
+                    {/* <div className="col-12 mt-5">
                         <div className="text-center">
                             <h4 style={{ color: "#59bea0" }}>2-Wheeler EV Electric Share Comparison</h4>
                         </div>
                         <TwoWheelerChart piedata={mergedDataEV} />
-                    </div>
+                    </div> */}
+                    <TwoWheelerEV/>
 
                     <div className="col-12">
                         <h2 className="mt-4">
                             Forecast Chart
                         </h2>
-                        <TwoWheelerForecast/>
+                        <TwoWheelerForecast />
                         {/* <TwoWheelerForecastChart inputData={mergedData} /> */}
                     </div>
 

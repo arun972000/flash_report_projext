@@ -14,25 +14,23 @@ import {
 import Form from 'react-bootstrap/Form';
 
 const COMPARISON_OPTIONS = [
-  { label: 'Month on Month (MoM)', value: "MAY'25" },
+  { label: 'Year on Year (YoY)', value: "APR'24" },
+  { label: 'Month on Month (MoM)', value: "MAR'25" },
 ];
 
-const RIGHT_MONTH = "JUN'25";
+const RIGHT_MONTH = "APR'25";
 const ALL_CATS = ['2W', '3W', 'PV', 'Tractor', 'CV'];
-
-// New data for May and Jun
 const RAW_DATA = {
-  '2W': { "MAY'25": 6.1, "JUN'25": 6.5 },
-  '3W': { "MAY'25": 56.5, "JUN'25": 79 },
-  'PV': { "MAY'25": 5.7, "JUN'25": 15.2 },
-  'Tractor': { "MAY'25": 2.7, "JUN'25": 0.1 },
-  'CV': { "MAY'25": 8.9, "JUN'25": 9.2 },
+  '2W': { "APR'24": 6.8, "MAR'25": 9.7, "APR'25": 10.2 },
+  '3W': { "APR'24": 56.3, "MAR'25": 57.5, "APR'25": 59.4 },
+  'PV': { "APR'24": 4.2, "MAR'25": 5.6, "APR'25": 5.7 },
+  'Tractor': { "APR'24": 1.5, "MAR'25": 1.6, "APR'25": 1.8 },
+  'CV': { "APR'24": 7.4, "MAR'25": 9.4, "APR'25": 8.9 },
 };
-
 const BAR_COLOR = '#3ab8b4';
 
-export default function DummyBarChart() {
-  const [selectedMonth, setSelectedMonth] = useState("MAY'25");
+export default function DualBarComparison() {
+  const [selectedMonth, setSelectedMonth] = useState("MAR'25");
 
   const toggleMonth = (month) => {
     setSelectedMonth(prev => (prev === month ? '' : month));
@@ -69,10 +67,13 @@ export default function DummyBarChart() {
   };
 
   return (
-    <div className="border-0 mb-4 mt-2">
+    <div className=" border-0 mb-4 mt-2">
+      <div className="card-header border-0 ">
+        <h2 className="mb-3">April 2025 – Alternative Fuel Adoption Summary</h2>
+      </div>
       <div className="card-body">
         <div className="mb-3 text-center">
-          <span className="me-2">Comparison Type:</span>
+          <span className="me-2">Select Comparison Type:</span>
           {COMPARISON_OPTIONS.map(({ label, value }) => (
             <Form.Check
               inline
@@ -110,7 +111,7 @@ export default function DummyBarChart() {
             </div>
           )}
 
-          {/* Right Chart - JUN'25 */}
+          {/* Right Chart - APR'25 */}
           <div className={`col-md-${selectedMonth ? '6' : '12'}`}>
             <h6 className="text-center mb-2">{RIGHT_MONTH}</h6>
             <ResponsiveContainer width="100%" height={300}>
@@ -122,7 +123,7 @@ export default function DummyBarChart() {
                 <CartesianGrid stroke="#e9ecef" horizontal={false} vertical={false} />
                 <XAxis type="number" tickFormatter={v => `${v}%`} />
                 <YAxis type="category" dataKey="category" />
-                <Tooltip formatter={v => `${v}%`} />
+                  <Tooltip formatter={v => `${v}%`} />
                 <Bar dataKey="value" fill="#81ea81" name={RIGHT_MONTH} barSize={16}>
                   <LabelList dataKey="value" position="right" formatter={val => `${val.toFixed(1)}%`} />
                   <LabelList dataKey="delta" content={renderDelta} />

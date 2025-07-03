@@ -2,10 +2,12 @@ import dynamic from "next/dynamic";
 import React from 'react';
 import BusApplication from "../application-split/Bus";
 import BusOEMChart from '../charts/DummyStackBarBus'
+import Bus_PieChart from '../dynamic-charts/OEM_Charts/BusPieChart'
 // const BusOEMChart = dynamic(() => import("../charts/BusOEM"), { ssr: false });
 const BusEV = dynamic(() => import("../ev/Bus-EV"), { ssr: false });
 const BusForecast = dynamic(() => import("../Forecast-chart/Bus"), { ssr: false });
 import './category.css'
+import TwoWheelerApp from '../charts/Piechart/AppicationPiechart'
 
 async function fetchBusData() {
   const token = "your-very-strong-random-string-here";
@@ -185,7 +187,7 @@ async function fetchBusAppData() {
     const monthNodes = hirarchydata
         .filter((n) => n.parent_id === marketShareNode.id)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(-1); // Last 1 months
+        .slice(0,1); // Last 1 months
 
     // Step 4: Merge data by company name
     const merged = {};
@@ -281,6 +283,8 @@ const BusOEM = async () => {
     const twoWheelerTextRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`, { cache: 'no-store' })
     const twoWheelerText = await twoWheelerTextRes.json();
 
+    const mergedDataApp= await fetchBusAppData()
+
     return (
         <div className='px-lg-4'>
             <div className='container-fluid'>
@@ -295,6 +299,9 @@ const BusOEM = async () => {
                             dangerouslySetInnerHTML={{ __html: twoWheelerText.bus || '<p>content is loading...</p>' }}
                         />
                     </div>
+<div className='col-12 mt-3'>
+    <Bus_PieChart/>
+</div>
 
                     <div className='col-12 mt-3'>
                         <BusOEMChart />
@@ -317,6 +324,12 @@ const BusOEM = async () => {
                         </h2>
                         <BusApplication />
                     </div> */}
+                     <div className="col-12">
+                        <h2 className="mt-4">
+                            Application Chart
+                        </h2>
+                        <TwoWheelerApp data={mergedDataApp} />
+                    </div>
                 </div>
             </div>
         </div>
