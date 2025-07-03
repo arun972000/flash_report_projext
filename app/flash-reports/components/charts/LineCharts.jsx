@@ -30,41 +30,15 @@ const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const manualRaceForecast = {
-  '2W': [
-    1362615, 1522055, 1696639, 1660090, 1446619,
-    1496596, 1585645, 1326221, 1621500, 1612050, 1365987
-  ],
-  '3W': [
-    94206, 99388, 99785, 104460, 100621,
-    102850, 104600, 95022, 106800, 107599, 95789
-  ],
-  'PV': [
-    312429, 356907, 360520, 308106, 294308,
-    308967, 315796, 255789, 360875, 340567, 298567
-  ],
-  'TRAC': [
-    62762, 70765, 58754, 69643, 75220,
-    71222, 86000, 72512, 76222, 72888, 63454
-  ],
-  'CV': [
-    78691, 89698, 87355, 77260, 74233,
-    73833, 77013, 77680, 84055, 90616, 72868
-  ],
-  'Truck': [
-    69222, 76816, 72554, 63380, 59959,
-    60872, 63389, 63398, 68657, 74218, 59399
-  ],
-  'Bus': [
-    9469, 12882, 14801, 13880, 14274,
-    12961, 13624, 14282, 15398, 16398, 13469
-  ],
-  'Total': [
-    1910703, 2138813, 2303053, 2219559, 1991001,
-    2053468, 2169054, 1827224, 2249452, 2223719, 1896665
-  ]
+  '2W': [1362615, 1522055, 1696639, 1660090, 1446619, 1496596, 1585645, 1326221, 1621500, 1612050, 1365987],
+  '3W': [94206, 99388, 99785, 104460, 100621, 102850, 104600, 95022, 106800, 107599, 95789],
+  'PV': [312429, 356907, 360520, 308106, 294308, 308967, 315796, 255789, 360875, 340567, 298567],
+  'TRAC': [62762, 70765, 58754, 69643, 75220, 71222, 86000, 72512, 76222, 72888, 63454],
+  'CV': [78691, 89698, 87355, 77260, 74233, 73833, 77013, 77680, 84055, 90616, 72868],
+  'Truck': [69222, 76816, 72554, 63380, 59959, 60872, 63389, 63398, 68657, 74218, 59399],
+  'Bus': [9469, 12882, 14801, 13880, 14274, 12961, 13624, 14282, 15398, 16398, 13469],
+  'Total': [1910703, 2138813, 2303053, 2219559, 1991001, 2053468, 2169054, 1827224, 2249452, 2223719, 1896665]
 };
-
-
 
 const abbreviate = v =>
   v >= 1e9 ? `${(v / 1e9).toFixed(1).replace(/\.0$/, '')}B` :
@@ -84,13 +58,26 @@ const CustomTooltip = ({ active, payload, label }) =>
   ) : null;
 
 const CustomLegend = ({ selectedCat }) => (
-  <div style={{
-    display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 20,
-    color: '#fff', marginTop: 16
-  }}>
+  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 20, color: '#fff', marginTop: 16 }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <div style={{ width: 20, height: 3, background: catColors[selectedCat], borderRadius: 2 }} />
-      <span style={{ fontSize: 13 }}>{selectedCat}</span>
+      <span style={{ fontSize: 13 }}>Historical</span>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ width: 20, height: 3, background: forecastColors.linear, borderRadius: 2 }} />
+      <span style={{ fontSize: 13 }}>Forecast (Stats)</span>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ width: 20, height: 3, background: forecastColors.score, borderRadius: 2 }} />
+      <span style={{ fontSize: 13 }}>Forecast (Survey-based)</span>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ width: 20, height: 3, background: forecastColors.ai, borderRadius: 2 }} />
+      <span style={{ fontSize: 13 }}>Forecast (AI)</span>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ width: 20, height: 3, background: forecastColors.race, borderRadius: 2 }} />
+      <span style={{ fontSize: 13 }}>Forecast (Race Insights)</span>
     </div>
   </div>
 );

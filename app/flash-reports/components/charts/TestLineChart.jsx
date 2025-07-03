@@ -142,7 +142,7 @@ const CustomLegend = ({ selectedCat }) => (
 
 const CustomLineChart = () => {
     const [data, setData] = useState([]);
-    const [selectedCat, setCat] = useState('TRAC');
+    const [selectedCat, setCat] = useState('Total');
     const [chartHeight, setHeight] = useState(420);
 
     useEffect(() => {

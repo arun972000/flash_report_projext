@@ -123,7 +123,7 @@ export default function DummyBarChart() {
                 <XAxis type="number" tickFormatter={v => `${v}%`} />
                 <YAxis type="category" dataKey="category" />
                 <Tooltip formatter={v => `${v}%`} />
-                <Bar dataKey="value" fill="#81ea81" name={RIGHT_MONTH} barSize={16}>
+                <Bar dataKey="value" fill="#fec602" name={RIGHT_MONTH} barSize={16}>
                   <LabelList dataKey="value" position="right" formatter={val => `${val.toFixed(1)}%`} />
                   <LabelList dataKey="delta" content={renderDelta} />
                 </Bar>

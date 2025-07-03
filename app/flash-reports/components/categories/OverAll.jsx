@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 import React from 'react'
-import LineChartWithTotal from '../charts/LineCharts'
+// import LineChartWithTotal from '../charts/LineCharts'
+import LineChartWithTotal from '../charts/TestLineChart'
 import RechartsChart from '../charts/customizechart'
 import DummyBarChart from '../charts/DummyBarChart'
 import './category.css'
