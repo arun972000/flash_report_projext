@@ -12,6 +12,8 @@ import './cv.css'
 import CommercialVehicleBarChart from '../charts/Barchart/stackBarChart'
 import Image from 'next/image'
 
+import CVPieChart from '../dynamic-charts/OEM_Charts/CM-PieChart'
+
 async function fetchCommercialVehicleData() {
   const token = "your-very-strong-random-string-here";
 
@@ -227,7 +229,8 @@ const CommercialVehicle = async () => {
 
                         <div className='col-12 mt-3'>
                             {/* <CM_Piechart /> */}
-                            <CommercialVehicleChart piedata={mergedData} />
+                            {/* <CommercialVehicleChart piedata={mergedData} /> */}
+                            <CVPieChart/>
                         </div>
 
                         <div className='col-12 mt-5'>

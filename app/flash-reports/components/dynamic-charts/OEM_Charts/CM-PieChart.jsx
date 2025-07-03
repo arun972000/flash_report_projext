@@ -44,15 +44,17 @@ const getColor = (i) => PALETTE[i % PALETTE.length].light;
 const getDark = (i) => PALETTE[i % PALETTE.length].dark;
 
 const companyData = [
-  { name: 'TATA MOTORS LTD', Apr25: 33.56, Mar25: 31.17, Apr24: 33.24 },
-  { name: 'MAHINDRA & MAHINDRA LIMITED', Apr25: 23.24, Mar25: 24.72, Apr24: 21.21 },
-  { name: 'ASHOK LEYLAND LTD', Apr25: 17.41, Mar25: 16.74, Apr24: 17.06 },
-  { name: 'VE COMMERCIAL VEHICLES LTD', Apr25: 8.35, Mar25: 6.93, Apr24: 7.10 },
-  { name: 'FORCE MOTORS LIMITED', Apr25: 3.66, Mar25: 2.75, Apr24: 1.90 },
-  { name: 'MARUTI SUZUKI INDIA LTD', Apr25: 3.53, Mar25: 4.02, Apr24: 3.50 },
-  { name: 'DAIMLER INDIA COMMERCIAL VEHICLES PVT. LTD', Apr25: 2.19, Mar25: 1.89, Apr24: 2.04 },
-  { name: 'SML ISUZU LTD', Apr25: 1.32, Mar25: 1.05, Apr24: 1.13 },
-  { name: 'Others', Apr25: 6.72, Mar25: 7.65, Apr24: 6.64 },
+  { name: 'TATA MOTORS LTD', May25: 35.51, Jun25: 34.61, Jun24: 38.87 },
+  { name: 'MAHINDRA & MAHINDRA LIMITED', May25: 23.47, Jun25: 24.27, Jun24: 22.56 },
+  { name: 'MAHINDRA LAST MILE MOBILITY LTD', May25: 1.91, Jun25: 1.94, Jun24: 1.99 },
+  { name: 'ASHOK LEYLAND LTD', May25: 17.97, Jun25: 17.55, Jun24: 16.42 },
+  { name: 'SWITCH MOBILITY AUTOMOTIVE LTD', May25: 0.10, Jun25: 0.04, Jun24: 0.06 },
+  { name: 'VE COMMERCIAL VEHICLES LTD', May25: 8.88, Jun25: 9.34, Jun24: 8.59 },
+  { name: 'MARUTI SUZUKI INDIA LTD', May25: 3.52, Jun25: 3.78, Jun24: 3.55 },
+  { name: 'FORCE MOTORS LIMITED', May25: 3.50, Jun25: 3.50, Jun24: 3.25 },
+  { name: 'DAIMLER INDIA COMMERCIAL VEHICLES PVT. LTD', May25: 2.38, Jun25: 2.23, Jun24: 2.17 },
+  { name: 'SML ISUZU LTD', May25: 2.11, Jun25: 2.07, Jun24: 2.22 },
+  { name: 'Others', May25: 0.66, Jun25: 0.66, Jun24: 0.32 },
 ];
 
 const companyNames = companyData.map(item => item.name);
@@ -75,7 +77,7 @@ const getComparisonData = (currentKey, compareKey, showSymbol) =>
 
 const ChartWithComparison = ({ current, compare, title }) => {
   const isMobile = useMediaQuery({ query: '(max-width: 576px)' });
-  const showSymbol = current === "Apr25";
+  const showSymbol = current === "May25";
   const data = getComparisonData(current, compare, showSymbol);
 
   const CustomTooltip = ({ active, payload }) => {
@@ -172,10 +174,10 @@ const CVPieChart = () => {
       </div>
 
       <div className="row">
-        <ChartWithComparison current="Mar25" compare="Apr24" title="Month on Month (MoM) - Mar 25" />
-        <ChartWithComparison current="Apr25" compare="Mar25" title="Month on Month (MoM) - Apr 25" />
-        <ChartWithComparison current="Apr24" compare="Apr25" title="Year on Year (YoY) - Apr 24" />
-        <ChartWithComparison current="Apr25" compare="Apr24" title="Year on Year (YoY) - Apr 25" />
+        <ChartWithComparison current="May25" compare="Jun24" title="Month on Month (MoM) - May 25" />
+        <ChartWithComparison current="May25" compare="May25" title="Month on Month (MoM) - Jun 25" />
+        <ChartWithComparison current="Jun24" compare="May25" title="Year on Year (YoY) - Jun 24" />
+        <ChartWithComparison current="May25" compare="Jun24" title="Year on Year (YoY) - Jun 25" />
       </div>
 
       {/* Shared Legend */}
