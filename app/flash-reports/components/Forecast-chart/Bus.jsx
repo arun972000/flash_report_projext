@@ -29,6 +29,43 @@ const categories = ['2W', '3W', 'PV', 'TRAC', 'Truck', 'Bus', 'CV', 'Total'];
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+const manualRaceForecast = {
+  '2W': [
+    1362615, 1522055, 1696639, 1660090, 1446619,
+    1496596, 1585645, 1326221, 1621500, 1612050, 1365987
+  ],
+  '3W': [
+    94206, 99388, 99785, 104460, 100621,
+    102850, 104600, 95022, 106800, 107599, 95789
+  ],
+  'PV': [
+    312429, 356907, 360520, 308106, 294308,
+    308967, 315796, 255789, 360875, 340567, 298567
+  ],
+  'TRAC': [
+    62762, 70765, 58754, 69643, 75220,
+    71222, 86000, 72512, 76222, 72888, 63454
+  ],
+  'CV': [
+    78691, 89698, 87355, 77260, 74233,
+    73833, 77013, 77680, 84055, 90616, 72868
+  ],
+  'Truck': [
+    69222, 76816, 72554, 63380, 59959,
+    60872, 63389, 63398, 68657, 74218, 59399
+  ],
+  'Bus': [
+    9469, 12882, 14801, 13880, 14274,
+    12961, 13624, 14282, 15398, 16398, 13469
+  ],
+  'Total': [
+    1910703, 2138813, 2303053, 2219559, 1991001,
+    2053468, 2169054, 1827224, 2249452, 2223719, 1896665
+  ]
+};
+
+
+
 const abbreviate = v =>
   v >= 1e9 ? `${(v / 1e9).toFixed(1).replace(/\.0$/, '')}B` :
     v >= 1e6 ? `${(v / 1e6).toFixed(1).replace(/\.0$/, '')}M` :
@@ -119,6 +156,7 @@ const CustomLineChart = () => {
           };
         });
 
+        const baseForecastIdx = rows.findIndex(row => row.month === '2025-02');
         const lastHistIdx = Math.max(...rows.filter(r => r.date <= today).map(r => r.idx));
 
         const transformed = rows.map(r => {
@@ -139,11 +177,12 @@ const CustomLineChart = () => {
               const lin = f.linear(r.idx);
               const sco = f.score();
               const ai = f.ai();
-              const race = (lin + sco + ai) / 3 * 1.02;
+              const manualVal = manualRaceForecast[key]?.[r.idx - baseForecastIdx] ?? null;
+
               out[`${key}_forecast_linear`] = lin;
               out[`${key}_forecast_score`] = sco;
               out[`${key}_forecast_ai`] = ai;
-              out[`${key}_forecast_race`] = race;
+              out[`${key}_forecast_race`] = manualVal;
             } else if (r.idx === lastHistIdx) {
               const anchor = r[src];
               out[`${key}_forecast_linear`] =
