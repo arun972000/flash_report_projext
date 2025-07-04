@@ -27,14 +27,19 @@ const getDark = (i) => PALETTE[i % PALETTE.length].dark;
 
 // ✅ Updated company data with Jun24, May25, Jun25
 const companyData = [
-  { name: "Mahindra Last Mile", Jun24: 9.17, May25: 9.99, Jun25: 12.09 },
+  { name: "Mahindra", Jun24: 9.17, May25: 9.99, Jun25: 12.09 },
   { name: "Bajaj Auto", Jun24: 4.87, May25: 9.53, Jun25: 10.70 },
+  { name: "DILLI ELECTRIC AUTO PVT LTD", Jun24: 3.75, May25: 2.63, Jun25: 2.76 },
+  { name: "MINI METRO EV L.L.P", Jun24: 2.48, May25: 1.80, Jun25: 1.70 },
+  { name: "SAERA ELECTRIC AUTO PVT LTD", Jun24: 4.72, May25: 3.04, Jun25: 3.31 },
+  { name: "SAHNIANAND E VEHICLES PVT LTD", Jun24: 1.32, May25: 1.69, Jun25: 1.42 },
   { name: "TVS Motor Company", Jun24: 0.04, May25: 2.40, Jun25: 2.73 },
   { name: "Piaggio Vehicles", Jun24: 2.46, May25: 1.57, Jun25: 1.70 },
   { name: "TI Clean Mobility", Jun24: 0.74, May25: 0.75, Jun25: 0.80 },
   { name: "Omega Seiki", Jun24: 0.70, May25: 0.69, Jun25: 0.76 },
-  { name: "Others", Jun24: 82.02, May25: 75.07, Jun25: 71.22 },
+  { name: "Others", Jun24: 69.75, May25: 65.92, Jun25: 62.02 }
 ];
+
 
 const companyNames = companyData.map((item) => item.name);
 
