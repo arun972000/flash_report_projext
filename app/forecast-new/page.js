@@ -197,7 +197,7 @@ export default function ForecastPage() {
 
   // ─── Compute “categories → regions → countries” from contentHierarchyNodes ─
   // Replace <YOUR_PARENT_ID> with actual parent node ID from backend
-  const ROOT_PARENT_ID = "76";
+  const ROOT_PARENT_ID = "61";
 
   // 1) Categories = nodes whose parent_id === ROOT_PARENT_ID
   const categories = useMemo(() => {
@@ -403,32 +403,86 @@ export default function ForecastPage() {
     return [...hist, ...fc];
   }, [chartData, historicalVolumes, forecastDataScore, scoreYearNames]);
 
-  // ─── Combine both linear + score forecasts ─────────────────────────────────
+  //Selected Graph initialization
+  const selectedGraph = graphs.find((g) => g.id === selectedGraphId);
+  const { ai_forecast: aiForecast = {}, race_forecast: raceForecast = {} } =
+    selectedGraph || {};
+
+  // right after you destructure aiForecast & raceForecast
   const bothData = useMemo(() => {
     if (!chartData.length) return [];
-    const hist = historicalVolumes.map((v, i) => {
-      const isLast = i === historicalVolumes.length - 1;
-      return {
-        year: Number(chartData[i].year),
-        value: v,
-        forecastLinear: isLast ? v : null,
-        forecastScore: isLast ? v : null,
-      };
-    });
-    const forecastSlice = scoreSettings.yearNames.map((yr, i) => ({
+
+    // 1) build the historical rows
+    const hist = chartData.map((row, i) => ({
+      year: Number(row.year),
+      value: historicalVolumes[i],
+      forecastLinear: null,
+      forecastScore: null,
+      forecastAI: null,
+      forecastRace: null,
+    }));
+
+    // 2) carry last actual value into the “0th” forecast point
+    if (hist.length) {
+      const last = hist[hist.length - 1];
+      last.forecastLinear = last.value;
+      last.forecastScore = last.value;
+      last.forecastAI = last.value;
+      last.forecastRace = last.value;
+    }
+
+    // 3) single unified slice for all forecasts
+    const fc = (scoreSettings.yearNames || []).map((yr, i) => ({
       year: Number(yr),
       value: null,
       forecastLinear: forecastDataLR[i]?.forecastVolume ?? null,
       forecastScore: forecastDataScore[i]?.forecastVolume ?? null,
+      forecastAI: aiForecast[yr] ?? null,
+      forecastRace: raceForecast[yr] ?? null,
     }));
-    return [...hist, ...forecastSlice];
+
+    return [...hist, ...fc];
   }, [
     chartData,
     historicalVolumes,
     forecastDataLR,
     forecastDataScore,
     scoreSettings.yearNames,
+    aiForecast,
+    raceForecast,
   ]);
+
+  // ─── Compute CAGR‐style growth for each series ──────────────────────────
+  const growthRates = useMemo(() => {
+    if (!bothData.length) return {};
+
+    // Number of historical rows = chartData.length
+    const histCount = chartData.length;
+
+    // 1) Compute historical CAGR
+    const firstHist = historicalVolumes[0];
+    const lastHist = historicalVolumes[historicalVolumes.length - 1];
+    const calc = (start, end) =>
+      start != null && end != null ? (end / start - 1) * 100 : null;
+    const historical = calc(firstHist, lastHist);
+
+    // 2) Now slice off the unified forecast block
+    const fc = bothData.slice(histCount);
+    if (!fc.length) {
+      return { historical };
+    }
+
+    const firstFc = fc[0];
+    const lastFc = fc[fc.length - 1];
+
+    return {
+      historical, // ← new
+      linear: calc(firstFc.forecastLinear, lastFc.forecastLinear),
+      score: calc(firstFc.forecastScore, lastFc.forecastScore),
+      ai: calc(firstFc.forecastAI, lastFc.forecastAI),
+      race: calc(firstFc.forecastRace, lastFc.forecastRace),
+    };
+  }, [bothData, chartData.length, historicalVolumes]);
 
   // ─── Color palette ─────────────────────────────────────────────────────────
   const PALETTE = [
@@ -445,7 +499,7 @@ export default function ForecastPage() {
   const getDark = (i) => PALETTE[i % PALETTE.length].dark;
 
   // ─── Legend payload for line charts ───────────────────────────────────────
-  const selectedGraph = graphs.find((g) => g.id === selectedGraphId);
+
   const legendPayload = useMemo(() => {
     const items = [{ value: "Historical", type: "line", color: "#D64444" }];
     if (selectedGraph?.forecast_types?.includes("linear")) {
@@ -462,6 +516,13 @@ export default function ForecastPage() {
         color: "#23DD1D",
       });
     }
+    if (Object.keys(aiForecast).length) {
+      items.push({ value: "Forecast (AI)", type: "line", color: "#A17CFF" });
+    }
+    if (Object.keys(raceForecast).length) {
+      items.push({ value: "Forecast (Race)", type: "line", color: "#FF8A65" });
+    }
+
     return items;
   }, [selectedGraph]);
 
@@ -535,7 +596,7 @@ export default function ForecastPage() {
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <>
+    <div className="forecast-wrapper">
       <GlobalStyles />
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -545,7 +606,7 @@ export default function ForecastPage() {
         className="container-fluid"
         style={{ background: "#2C2E31" }}
       >
-        <div className="container mt-1">
+        <div className="container">
           {/* ─── APP HEADER ─────────────────────────────────────────── */}
           <div className="app-header d-flex justify-content-between align-items-center">
             <Link href="/" passHref>
@@ -568,12 +629,107 @@ export default function ForecastPage() {
                 <Image
                   src="/images/race analytics new logo white.png"
                   alt="Race Auto India"
-                  width={170}
-                  height={60}
+                  width={Math.round(160 * 1.5)}
+                  height={Math.round(60 * 1.5)}
                 />
               </motion.div>
             </Link>
+
             <div className="nav-buttons">
+              {/* ─── Exclusive Services Dropdown Next to Logo ───────────────────── */}
+              <div className="exclusive-services-dropdown dropdown forecast-dropdown ms-3">
+                <button
+                  className="forecast-navbar-btn dropdown-toggle"
+                  data-bs-toggle="dropdown"
+                >
+                  Exclusive Services
+                </button>
+                <ul className="dropdown-menu dropdown-menu-dark">
+                  {/* Submenu: Key Market Indicators */}
+                  <li>
+                    <a
+                      className="dropdown-item"
+                      href="mailto:info@raceautoindia.com,director@raceautoindia.com?subject=Forecast%20Page%20Request%20-%20Key%20Market%20Indicators&body=Hello%2C%0D%0A%0D%0AThis%20request%20is%20made%20from%20the%20Forecast%20Page%20of%20Race%20Auto%20India.%0D%0AI%20would%20like%20to%20receive%20the%20latest%20Key%20Market%20Indicators.%0D%0AThank%20you."
+                    >
+                      Key Market Indicators
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      className="dropdown-item"
+                      href="mailto:info@raceautoindia.com,director@raceautoindia.com?subject=Forecast%20Page%20Request%20-%20Global%20Comparisons&body=Hi%2C%0D%0A%0D%0ARequest%20made%20from%20the%20Forecast%20Page.%20I%20am%20interested%20in%20Global%20Comparison%20data.%0D%0ARegards."
+                    >
+                      Global Comparisons
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      className="dropdown-item"
+                      href="mailto:info@raceautoindia.com,director@raceautoindia.com?subject=Forecast%20Page%20Request%20-%20Market%20Highlights&body=Dear%20Team%2C%0D%0A%0D%0AThis%20is%20a%20request%20from%20the%20Forecast%20Page.%20Please%20share%20the%20latest%20market%20highlights.%0D%0AThank%20you."
+                    >
+                      Highlights
+                    </a>
+                  </li>
+
+                  <li>
+                    <hr className="dropdown-divider" />
+                  </li>
+
+                  {/* Submenu: Analyst Opinion */}
+                  <li className="dropdown-submenu px-2">
+                    <span className="dropdown-item-text text-muted small">
+                      Analyst Opinion
+                    </span>
+                    <ul className="list-unstyled ps-3">
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="mailto:info@raceautoindia.com,director@raceautoindia.com?subject=Forecast%20Page%20Request%20-%20Book%20Analyst%20Appointment&body=Hello%2C%0D%0A%0D%0AI%20am%20requesting%20an%20appointment%20with%20an%20analyst%20via%20the%20Forecast%20Page.%0D%0ARegards."
+                        >
+                          Book an Appointment
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="mailto:info@raceautoindia.com,director@raceautoindia.com?subject=Forecast%20Page%20Request%20-%20Submit%20a%20Query&body=Hi%20Team%2C%0D%0A%0D%0AI%20have%20a%20market-related%20query%20from%20the%20Forecast%20Page.%0D%0ARegards."
+                        >
+                          Send Your Queries
+                        </a>
+                      </li>
+                    </ul>
+                  </li>
+
+                  <li>
+                    <hr className="dropdown-divider" />
+                  </li>
+
+                  {/* Submenu: Reports */}
+                  <li className="dropdown-submenu px-2">
+                    <span className="dropdown-item-text text-muted small">
+                      Reports
+                    </span>
+                    <ul className="list-unstyled ps-3">
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="mailto:info@raceautoindia.com,director@raceautoindia.com?subject=Forecast%20Page%20Request%20-%20Sample%20Report&body=Dear%20Team%2C%0D%0A%0D%0ARequest%20from%20the%20Forecast%20Page%20to%20receive%20a%20sample%20report.%0D%0AThanks."
+                        >
+                          Sample Reports on Demand
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href="mailto:info@raceautoindia.com,director@raceautoindia.com?subject=Forecast%20Page%20Request%20-%20Full%20Report%20Purchase&body=Hi%2C%0D%0A%0D%0AI%20want%20to%20purchase%20a%20full%20market%20report%20via%20the%20Forecast%20Page.%20Please%20send%20pricing%20and%20access%20details.%0D%0AThanks."
+                        >
+                          Purchase Full Report on Demand
+                        </a>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
               <button
                 className="nav-btn"
                 onClick={() => router.push("/score-card")}
@@ -583,7 +739,7 @@ export default function ForecastPage() {
               </button>
               <button
                 className="nav-btn"
-                onClick={() => router.push("/flash-reports")}
+                onClick={() => router.push("/reports")}
               >
                 <FaBolt className="btn-icon" />
                 Flash Reports
@@ -793,7 +949,94 @@ export default function ForecastPage() {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.5 }}
                 >
-                  <div className="chart-card">
+                  <div className="chart-card" style={{ position: "relative" }}>
+                    <div className="growth-block mb-1 text-center">
+                      <div className="growth-header">Growth Rates (CAGR%)</div>
+                      <div className="growth-rates d-flex justify-content-center gap-4">
+                        {growthRates.historical != null && (
+                          <div className="rate-item">
+                            <span
+                              className="dot"
+                              style={{ background: "#D64444" }}
+                            />
+                            {growthRates.historical.toFixed(1)}% Historical
+                          </div>
+                        )}
+                        {growthRates.linear != null && (
+                          <div className="rate-item">
+                            <span
+                              className="dot"
+                              style={{ background: "#F58C1F" }}
+                            />
+                            {growthRates.linear.toFixed(1)}% Forecast (Stats)
+                          </div>
+                        )}
+                        {growthRates.score != null && (
+                          <div className="rate-item">
+                            <span
+                              className="dot"
+                              style={{ background: "#23DD1D" }}
+                            />
+                            {growthRates.score.toFixed(1)}% Forecast (Survey)
+                          </div>
+                        )}
+                        {growthRates.ai != null && (
+                          <div className="rate-item">
+                            <span
+                              className="dot"
+                              style={{ background: "#A17CFF" }}
+                            />
+                            {growthRates.ai.toFixed(1)}% Forecast (AI)
+                          </div>
+                        )}
+                        {growthRates.race != null && (
+                          <div className="rate-item">
+                            <span
+                              className="dot"
+                              style={{ background: "#FF8A65" }}
+                            />
+                            {growthRates.race.toFixed(1)}% Forecast (Race)
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 8,
+                        right: 65,
+                        display: "flex",
+                        alignItems: "center",
+                        pointerEvents: "none",
+                        zIndex: 10,
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: "rgba(255,255,255,0.6)",
+                          fontSize: "0.75rem",
+                          marginRight: "4px",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        Powered by
+                      </span>
+                    </div>
+                    <Image
+                        src="/images/Ri-Logo-Graph-White.png"
+                        alt="Race Innovations"
+                        width={33}
+                        height={50}
+                        style={{
+                          position: "absolute",
+                          top: 15,
+                          right: 25,
+                          opacity: 1,
+                          pointerEvents: "none",
+                        }}
+                      />
+
                     <ResponsiveContainer
                       width="100%"
                       height={400}
@@ -829,6 +1072,15 @@ export default function ForecastPage() {
                               animationDuration={2500}
                               animationEasing="ease-out"
                             >
+                              <image
+                                href="/images/chart-background-race-auto-logo.png" // Adjust path as needed
+                                x="38%"
+                                y="8%"
+                                width="300"
+                                height="300"
+                                opacity="0.04"
+                                // transform="rotate(-20)"
+                              />
                               <defs>
                                 <linearGradient
                                   id="histGrad"
@@ -857,12 +1109,10 @@ export default function ForecastPage() {
                                   />
                                 </linearGradient>
                               </defs>
-
                               <CartesianGrid
                                 stroke="rgba(255,255,255,0.1)"
                                 strokeDasharray="3 3"
                               />
-
                               <XAxis
                                 dataKey="year"
                                 axisLine={false}
@@ -879,7 +1129,6 @@ export default function ForecastPage() {
                                 domain={["auto", "auto"]}
                                 tickFormatter={abbreviate}
                               />
-
                               <Brush
                                 dataKey="year"
                                 height={12}
@@ -905,13 +1154,11 @@ export default function ForecastPage() {
                                   />
                                 }
                               />
-
                               <Tooltip content={<CustomTooltip />} />
                               <Legend
                                 wrapperStyle={{ marginTop: 24 }}
                                 payload={legendPayload}
                               />
-
                               <Line
                                 dataKey="value"
                                 name="Historical"
@@ -920,7 +1167,6 @@ export default function ForecastPage() {
                                 connectNulls
                                 animationBegin={0}
                               />
-
                               {hasLinear && (
                                 <Line
                                   dataKey={
@@ -936,7 +1182,6 @@ export default function ForecastPage() {
                                   animationBegin={150}
                                 />
                               )}
-
                               {hasScore && (
                                 <Line
                                   dataKey={
@@ -950,6 +1195,28 @@ export default function ForecastPage() {
                                   strokeDasharray="2 2"
                                   connectNulls
                                   animationBegin={300}
+                                />
+                              )}
+                              {aiForecast && (
+                                <Line
+                                  dataKey="forecastAI"
+                                  name="Forecast (AI)"
+                                  stroke="#A17CFF"
+                                  strokeWidth={2}
+                                  strokeDasharray="4 4"
+                                  connectNulls
+                                  animationBegin={450}
+                                />
+                              )}
+                              {raceForecast && (
+                                <Line
+                                  dataKey="forecastRace"
+                                  name="Forecast (Race)"
+                                  stroke="#FF8A65"
+                                  strokeWidth={2}
+                                  strokeDasharray="2 4"
+                                  connectNulls
+                                  animationBegin={600}
                                 />
                               )}
                             </LineChart>
@@ -1116,6 +1383,6 @@ export default function ForecastPage() {
           <Footer />
         </div>
       </motion.div>
-    </>
+    </div>
   );
 }
