@@ -5,7 +5,7 @@ export default function AdminLayout({
 }>) {
   return (
     <>
-      <div className="container admin-panel">{children}</div>
+      <div className="container-fluid admin-panel">{children}</div>
     </>
   );
 }

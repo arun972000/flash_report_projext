@@ -11,14 +11,23 @@ import {
   Popconfirm,
   Empty,
   Spin,
+  Modal,
+  Form,
+  InputNumber,
+  Row,
+  Col,
 } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 
 export default function GraphList() {
   const [graphs, setGraphs] = useState([]);
   const [contentHierarchy, setContentHierarchy] = useState([]);
   const [volumeDataMap, setVolumeDataMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editGraph, setEditGraph] = useState(null);
+  const [aiForecastRows, setAiForecastRows] = useState([]);
+  const [raceForecastRows, setRaceForecastRows] = useState([]);
 
   // Fetch all three endpoints in parallel
   const loadAll = useCallback(async () => {
@@ -69,8 +78,8 @@ export default function GraphList() {
       const res = await fetch("/api/graphs", {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json" ,
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
         },
         body: JSON.stringify({ id }),
       });
@@ -81,6 +90,40 @@ export default function GraphList() {
       message.error("Delete failed");
     }
   }, []);
+
+  const handleEdit = (record) => {
+    setEditGraph(record);
+    console.log(editGraph);
+    setAiForecastRows(
+      Object.entries(record.ai_forecast || {}).map(([year, value]) => ({
+        year,
+        value,
+      }))
+    );
+    setRaceForecastRows(
+      Object.entries(record.race_forecast || {}).map(([year, value]) => ({
+        year,
+        value,
+      }))
+    );
+    setEditModalVisible(true);
+  };
+
+  const handleForecastChange = (setter, index, key, value) => {
+    setter((prev) => {
+      const copy = [...prev];
+      copy[index][key] = value;
+      return copy;
+    });
+  };
+
+  const handleAddRow = (setter) => {
+    setter((prev) => [...prev, { year: "", value: "" }]);
+  };
+
+  const handleRemoveRow = (setter, index) => {
+    setter((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // Build a simple id→name map for contentHierarchy lookups
   const idToName = useMemo(() => {
@@ -149,6 +192,40 @@ export default function GraphList() {
         render: (t) =>
           typeof t === "string" ? t.charAt(0).toUpperCase() + t.slice(1) : "—",
       },
+      {
+        title: "Forecasts",
+        key: "forecast_summary",
+        render: (_, record) => {
+          const { ai_forecast, race_forecast } = record;
+
+          const formatTooltip = (forecast) =>
+            Object.entries(forecast || {})
+              .map(([year, val]) => `${year}: ${val}`)
+              .join("\n");
+
+          const yearRange = (forecast) => {
+            const years = Object.keys(forecast || {});
+            return years.length
+              ? `${years[0]}–${years[years.length - 1]}`
+              : "null";
+          };
+
+          return (
+            <Space size="small" direction="vertical">
+              <Tooltip
+                title={ai_forecast ? formatTooltip(ai_forecast) : "null"}
+              >
+                <Tag color="blue">AI: {yearRange(ai_forecast)}</Tag>
+              </Tooltip>
+              <Tooltip
+                title={race_forecast ? formatTooltip(race_forecast) : "null"}
+              >
+                <Tag color="geekblue">Race: {yearRange(race_forecast)}</Tag>
+              </Tooltip>
+            </Space>
+          );
+        },
+      },
 
       {
         title: "Created",
@@ -160,14 +237,23 @@ export default function GraphList() {
         title: "Actions",
         key: "actions",
         render: (_, record) => (
-          <Popconfirm
-            title="Delete this graph?"
-            onConfirm={() => handleDelete(record.id)}
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
+          <Space>
+            <Popconfirm
+              title="Delete this graph?"
+              onConfirm={() => handleDelete(record.id)}
+            >
+              <Button type="link" danger icon={<DeleteOutlined />}>
+                Delete
+              </Button>
+            </Popconfirm>
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            >
+              Edit
             </Button>
-          </Popconfirm>
+          </Space>
         ),
       },
     ],
@@ -190,11 +276,133 @@ export default function GraphList() {
   }
 
   return (
-    <Table
-      rowKey="id"
-      dataSource={graphs}
-      columns={columns}
-      pagination={{ pageSize: 10 }}
-    />
+    <>
+      <Modal
+        open={editModalVisible}
+        onCancel={() => setEditModalVisible(false)}
+        onOk={async () => {
+          const ai = {};
+          aiForecastRows.forEach((r) => {
+            if (r.year && r.value !== "") ai[r.year] = Number(r.value);
+          });
+          const race = {};
+          raceForecastRows.forEach((r) => {
+            if (r.year && r.value !== "") race[r.year] = Number(r.value);
+          });
+
+          try {
+            const res = await fetch("/api/graphs", {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
+              },
+              body: JSON.stringify({
+                id: editGraph.id,
+                name: editGraph.name,
+                datasetIds: editGraph.dataset_ids,
+                forecastTypes: editGraph.forecast_types,
+                chartType: editGraph.chart_type,
+                aiForecast: ai,
+                raceForecast: race,
+              }),
+            });
+            if (!res.ok) throw new Error();
+            message.success("Forecast updated");
+            setEditModalVisible(false);
+            loadAll();
+          } catch {
+            message.error("Update failed");
+          }
+        }}
+        title={`Edit Forecasts for: ${editGraph?.name}`}
+        width={600}
+        okText="Save"
+      >
+        <h4>AI Forecast</h4>
+        {aiForecastRows.map((row, i) => (
+          <Row gutter={8} key={`ai-${i}`} style={{ marginBottom: 8 }}>
+            <Col span={10}>
+              <InputNumber
+                placeholder="Year"
+                value={row.year}
+                onChange={(val) =>
+                  handleForecastChange(setAiForecastRows, i, "year", val)
+                }
+                style={{ width: "100%" }}
+              />
+            </Col>
+            <Col span={10}>
+              <InputNumber
+                placeholder="Value"
+                value={row.value}
+                onChange={(val) =>
+                  handleForecastChange(setAiForecastRows, i, "value", val)
+                }
+                style={{ width: "100%" }}
+              />
+            </Col>
+            <Col span={4}>
+              <Button
+                danger
+                onClick={() => handleRemoveRow(setAiForecastRows, i)}
+              >
+                Remove
+              </Button>
+            </Col>
+          </Row>
+        ))}
+        <Button
+          type="dashed"
+          onClick={() => handleAddRow(setAiForecastRows)}
+          style={{ marginBottom: 16 }}
+        >
+          + Add AI Forecast
+        </Button>
+
+        <h4>Race Forecast</h4>
+        {raceForecastRows.map((row, i) => (
+          <Row gutter={8} key={`race-${i}`} style={{ marginBottom: 8 }}>
+            <Col span={10}>
+              <InputNumber
+                placeholder="Year"
+                value={row.year}
+                onChange={(val) =>
+                  handleForecastChange(setRaceForecastRows, i, "year", val)
+                }
+                style={{ width: "100%" }}
+              />
+            </Col>
+            <Col span={10}>
+              <InputNumber
+                placeholder="Value"
+                value={row.value}
+                onChange={(val) =>
+                  handleForecastChange(setRaceForecastRows, i, "value", val)
+                }
+                style={{ width: "100%" }}
+              />
+            </Col>
+            <Col span={4}>
+              <Button
+                danger
+                onClick={() => handleRemoveRow(setRaceForecastRows, i)}
+              >
+                Remove
+              </Button>
+            </Col>
+          </Row>
+        ))}
+        <Button type="dashed" onClick={() => handleAddRow(setRaceForecastRows)}>
+          + Add Race Forecast
+        </Button>
+      </Modal>
+      <Table
+        rowKey="id"
+        dataSource={graphs}
+        columns={columns}
+        pagination={{ pageSize: 10 }}
+      />
+    </>
   );
 }
