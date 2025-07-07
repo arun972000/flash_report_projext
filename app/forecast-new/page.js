@@ -1023,7 +1023,7 @@ export default function ForecastPage() {
                         Powered by
                       </span>
                     </div>
-                    <Image
+                    {/* <Image
                         src="/images/Ri-Logo-Graph-White.png"
                         alt="Race Innovations"
                         width={33}
@@ -1035,7 +1035,7 @@ export default function ForecastPage() {
                           opacity: 1,
                           pointerEvents: "none",
                         }}
-                      />
+                      /> */}
 
                     <ResponsiveContainer
                       width="100%"
@@ -1072,7 +1072,7 @@ export default function ForecastPage() {
                               animationDuration={2500}
                               animationEasing="ease-out"
                             >
-                              <image
+                              {/* <image
                                 href="/images/chart-background-race-auto-logo.png" // Adjust path as needed
                                 x="38%"
                                 y="8%"
@@ -1080,7 +1080,7 @@ export default function ForecastPage() {
                                 height="300"
                                 opacity="0.04"
                                 // transform="rotate(-20)"
-                              />
+                              /> */}
                               <defs>
                                 <linearGradient
                                   id="histGrad"
