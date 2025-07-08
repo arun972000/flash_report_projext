@@ -452,35 +452,43 @@ export default function ForecastPage() {
     raceForecast,
   ]);
 
-  // ─── Compute CAGR‐style growth for each series ──────────────────────────
+// ─── Compute CAGR‐style growth for each series ──────────────────────────
   const growthRates = useMemo(() => {
-    if (!bothData.length) return {};
-
-    // Number of historical rows = chartData.length
     const histCount = chartData.length;
-
+    if (!bothData.length || histCount < 2) return {};
+ 
     // 1) Compute historical CAGR
     const firstHist = historicalVolumes[0];
-    const lastHist = historicalVolumes[historicalVolumes.length - 1];
-    const calc = (start, end) =>
-      start != null && end != null ? (end / start - 1) * 100 : null;
-    const historical = calc(firstHist, lastHist);
-
+    const lastHist = historicalVolumes[histCount - 1];
+    const periodsHist = histCount - 1;
+ 
+    const calcCAGR = (start, end, periods) =>
+      start != null && end != null && periods > 0
+        ? (Math.pow(end / start, 1 / periods) - 1) * 100
+        : null;
+ 
+    const historical = calcCAGR(firstHist, lastHist, periodsHist);
+ 
     // 2) Now slice off the unified forecast block
     const fc = bothData.slice(histCount);
-    if (!fc.length) {
+    if (fc.length < 2) {
       return { historical };
     }
-
+ 
     const firstFc = fc[0];
     const lastFc = fc[fc.length - 1];
-
+    const periodsFc = fc.length - 1;
+ 
     return {
-      historical, // ← new
-      linear: calc(firstFc.forecastLinear, lastFc.forecastLinear),
-      score: calc(firstFc.forecastScore, lastFc.forecastScore),
-      ai: calc(firstFc.forecastAI, lastFc.forecastAI),
-      race: calc(firstFc.forecastRace, lastFc.forecastRace),
+      historical,
+      linear: calcCAGR(
+        firstFc.forecastLinear,
+        lastFc.forecastLinear,
+        periodsFc
+      ),
+      score: calcCAGR(firstFc.forecastScore, lastFc.forecastScore, periodsFc),
+      ai: calcCAGR(firstFc.forecastAI, lastFc.forecastAI, periodsFc),
+      race: calcCAGR(firstFc.forecastRace, lastFc.forecastRace, periodsFc),
     };
   }, [bothData, chartData.length, historicalVolumes]);
 
