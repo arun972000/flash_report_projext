@@ -731,9 +731,10 @@ export default function ForecastPage() {
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
-    <LoginNavButton/>
+    
     
     <div className="forecast-wrapper">
+      
       {adminModalOpen && (
         <motion.div className="modal-overlay admin-modal-overlay">
           <motion.div className="modal-card admin-modal-card">
@@ -1108,6 +1109,7 @@ export default function ForecastPage() {
                 <FaBolt className="btn-icon" />
                 Flash Reports
               </button>
+              <LoginNavButton/>
             </div>
           </div>
 
