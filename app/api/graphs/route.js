@@ -7,6 +7,8 @@ export async function GET() {
       SELECT 
         id, 
         name, 
+        description,
+        summary,
         dataset_ids, 
         forecast_types, 
         chart_type, 
@@ -33,6 +35,8 @@ export async function POST(req) {
   try {
     const {
       name,
+      description,
+      summary,
       datasetIds,
       forecastTypes,
       chartType,
@@ -58,10 +62,12 @@ export async function POST(req) {
 
     const [result] = await pool.query(
       `INSERT INTO graphs 
-        (name, dataset_ids, forecast_types, chart_type, ai_forecast, race_forecast)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+    (name, description, summary, dataset_ids, forecast_types, chart_type, ai_forecast, race_forecast)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         name,
+        description || null,
+        summary || null,
         JSON.stringify(datasetIds),
         JSON.stringify(forecastTypes || []),
         chartType,
@@ -74,6 +80,8 @@ export async function POST(req) {
       JSON.stringify({
         id: result.insertId,
         name,
+        description,
+        summary,
         datasetIds,
         forecastTypes,
         chartType,
@@ -97,6 +105,8 @@ export async function PUT(req) {
     const {
       id,
       name,
+      description,
+      summary,
       datasetIds,
       forecastTypes,
       chartType,
@@ -113,15 +123,19 @@ export async function PUT(req) {
 
     const [result] = await pool.query(
       `UPDATE graphs SET 
-        name = ?, 
-        dataset_ids = ?, 
-        forecast_types = ?, 
-        chart_type = ?, 
-        ai_forecast = ?, 
-        race_forecast = ?
-       WHERE id = ?`,
+    name = ?, 
+    description = ?, 
+    summary = ?, 
+    dataset_ids = ?, 
+    forecast_types = ?, 
+    chart_type = ?, 
+    ai_forecast = ?, 
+    race_forecast = ?
+   WHERE id = ?`,
       [
         name || null,
+        description || null,
+        summary || null,
         datasetIds ? JSON.stringify(datasetIds) : null,
         forecastTypes ? JSON.stringify(forecastTypes) : JSON.stringify([]),
         chartType || null,

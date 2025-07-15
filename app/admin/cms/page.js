@@ -14,6 +14,7 @@ import GraphList from './GraphList';
 import SubmittedScores from './SubmittedScores';
 import PreviewPage from './PreviewPage';
 import UserOverallScores     from './UserOverallScores';
+import UserAuthorization from './UserAuthorization';
 
 export default function Home() {
   const historicalItems = [
@@ -35,6 +36,7 @@ export default function Home() {
     { key: 'create', label: 'Create Graph', children: <CreateGraph /> },
     { key: 'list', label: 'All Graphs', children: <GraphList /> },
     { key: 'preview', label: 'Preview Page',  children: <PreviewPage /> },
+    { key: 'user', label: 'User Authorization',  children: <UserAuthorization /> },
   ];
 
   const tabItems = [

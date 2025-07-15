@@ -177,6 +177,8 @@ export default function CreateGraph() {
 
         const payload = {
           name: values.name,
+          description: values.description || "",
+          summary: values.summary || "",
           datasetIds: values.datasetId,
           chartType: values.chartType,
           forecastTypes: values.forecastTypes || null,
@@ -234,7 +236,15 @@ export default function CreateGraph() {
           <Input placeholder="e.g. Sales Trend 2020–2025" />
         </Form.Item>
 
-        <Form.Item label="Historical Dataset Filter" >
+        <Form.Item name="summary" label="Summary (30 words)">
+          <Input.TextArea rows={2} placeholder="Add a brief summary..." />
+        </Form.Item>
+
+        <Form.Item name="description" label="Description (300 words)">
+          <Input.TextArea rows={5} placeholder="Add a short description..." />
+        </Form.Item>
+
+        <Form.Item label="Historical Dataset Filter">
           <TreeSelect
             style={{ width: "100%" }}
             value={selectedStreamPath[selectedStreamPath.length - 1] || null}

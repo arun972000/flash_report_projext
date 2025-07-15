@@ -16,6 +16,7 @@ import {
   InputNumber,
   Row,
   Col,
+  Input,
 } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 
@@ -28,6 +29,8 @@ export default function GraphList() {
   const [editGraph, setEditGraph] = useState(null);
   const [aiForecastRows, setAiForecastRows] = useState([]);
   const [raceForecastRows, setRaceForecastRows] = useState([]);
+  const [description, setDescription] = useState("");
+  const [summary, setSummary] = useState("");
 
   // Fetch all three endpoints in parallel
   const loadAll = useCallback(async () => {
@@ -93,7 +96,8 @@ export default function GraphList() {
 
   const handleEdit = (record) => {
     setEditGraph(record);
-    console.log(editGraph);
+    setDescription(record.description || "");
+    setSummary(record.summary || "");
     setAiForecastRows(
       Object.entries(record.ai_forecast || {}).map(([year, value]) => ({
         year,
@@ -192,6 +196,8 @@ export default function GraphList() {
         render: (t) =>
           typeof t === "string" ? t.charAt(0).toUpperCase() + t.slice(1) : "—",
       },
+      { title: "Summary", dataIndex: "summary", ellipsis: true },
+      { title: "Description", dataIndex: "description", ellipsis: true },
       {
         title: "Forecasts",
         key: "forecast_summary",
@@ -300,6 +306,8 @@ export default function GraphList() {
               body: JSON.stringify({
                 id: editGraph.id,
                 name: editGraph.name,
+                description,
+                summary,
                 datasetIds: editGraph.dataset_ids,
                 forecastTypes: editGraph.forecast_types,
                 chartType: editGraph.chart_type,
@@ -307,6 +315,7 @@ export default function GraphList() {
                 raceForecast: race,
               }),
             });
+
             if (!res.ok) throw new Error();
             message.success("Forecast updated");
             setEditModalVisible(false);
@@ -319,6 +328,26 @@ export default function GraphList() {
         width={600}
         okText="Save"
       >
+        <Form layout="vertical">
+          <Form.Item label="Summary">
+            <Input.TextArea
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              placeholder="Enter summary"
+              autoSize={{ minRows: 2, maxRows: 4 }}
+            />
+          </Form.Item>
+
+          <Form.Item label="Description">
+            <Input.TextArea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter description"
+              autoSize={{ minRows: 2, maxRows: 6 }}
+            />
+          </Form.Item>
+        </Form>
+
         <h4>AI Forecast</h4>
         {aiForecastRows.map((row, i) => (
           <Row gutter={8} key={`ai-${i}`} style={{ marginBottom: 8 }}>
