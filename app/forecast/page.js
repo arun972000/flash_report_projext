@@ -1,4 +1,4 @@
-// File: app/forecast-new/page.js
+// File: app/forecast/page.js
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
@@ -43,7 +43,7 @@ export default function ForecastPage() {
   const [isHovering, setIsHovering] = useState(false);
   const [isDatasetHovering, setIsDatasetHovering] = useState(false);
   const [isRegionsHovering, setIsRegionsHovering] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // ─── fetched data ─────────────────────────────────────────────────
   const [graphs, setGraphs] = useState([]);
@@ -52,6 +52,7 @@ export default function ForecastPage() {
   const [contentHierarchyNodes, setContentHierarchyNodes] = useState([]);
   const [scoreSettings, setScoreSettings] = useState({ yearNames: [] });
   const [submissions, setSubmissions] = useState([]);
+  const [questions, setQuestions] = useState([]);
 
   // ─── user selections ─────────────────────────────────────────────────
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
@@ -190,41 +191,118 @@ export default function ForecastPage() {
       .catch(console.error);
 
     // pull in the submissions, questions & settings so we can compute averages
+    // Promise.all([
+    //   fetch("/api/saveScores", {
+    //     headers: {
+    //       Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
+    //     },
+    //   }),
+    //   fetch("/api/questions", {
+    //     headers: {
+    //       Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
+    //     },
+    //   }),
+    //   fetch("/api/scoreSettings", {
+    //     headers: {
+    //       Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
+    //     },
+    //   }),
+    // ])
+    //   .then(async ([subRes, qRes, sRes]) => {
+    //     if (!subRes.ok || !qRes.ok || !sRes.ok) throw new Error();
+    //     const { submissions: rawSubs } = await subRes.json();
+    //     const questions = await qRes.json();
+    //     const { yearNames } = await sRes.json();
+
+    //     // build posAttrs, negAttrs & weights
+    //     const posAttrs = [],
+    //       negAttrs = [],
+    //       weights = {};
+    //     questions.forEach((q) => {
+    //       const key = String(q.id);
+    //       weights[key] = Number(q.weight) || 0;
+    //       const attr = { key, label: q.text };
+    //       q.type === "positive" ? posAttrs.push(attr) : negAttrs.push(attr);
+    //     });
+
+    //     // enrich submissions with posScores/negScores
+    //     const enriched = rawSubs.map((sub) => {
+    //       const posScores = {},
+    //         negScores = {};
+    //       posAttrs.forEach(
+    //         (a) => (posScores[a.key] = Array(yearNames.length).fill(0))
+    //       );
+    //       negAttrs.forEach(
+    //         (a) => (negScores[a.key] = Array(yearNames.length).fill(0))
+    //       );
+    //       sub.scores.forEach(({ questionId, yearIndex, score, skipped }) => {
+    //         if (skipped) return;
+    //         const k = String(questionId);
+    //         if (posScores[k]) posScores[k][yearIndex] = score;
+    //         if (negScores[k]) negScores[k][yearIndex] = score;
+    //       });
+    //       return {
+    //         id: sub.id,
+    //         createdAt: sub.createdAt,
+    //         posAttributes: posAttrs,
+    //         negAttributes: negAttrs,
+    //         posScores,
+    //         negScores,
+    //         weights,
+    //         yearNames,
+    //       };
+    //     });
+
+    //     setSubmissions(enriched);
+    //     setLoading(false);
+    //   })
+    //   .catch(console.error);
+  }, []);
+
+  // ─── Fetch questions, submissions & scoreSettings for the selected graph ─────────────────
+  useEffect(() => {
+    if (!selectedGraphId) return; // wait until a graph is picked
+    setLoading(true);
+
+    const authHeader = {
+      Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
+    };
+
     Promise.all([
-      fetch("/api/saveScores", {
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
-        },
+      fetch(`/api/questions?graphId=${selectedGraphId}`, {
+        headers: authHeader,
       }),
-      fetch("/api/questions", {
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
-        },
+      fetch(`/api/saveScores?graphId=${selectedGraphId}`, {
+        headers: authHeader,
       }),
-      fetch("/api/scoreSettings", {
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
-        },
-      }),
+      fetch("/api/scoreSettings", { headers: authHeader }),
     ])
-      .then(async ([subRes, qRes, sRes]) => {
-        if (!subRes.ok || !qRes.ok || !sRes.ok) throw new Error();
+      .then(async ([qRes, subRes, sRes]) => {
+        if (!qRes.ok || !subRes.ok || !sRes.ok) throw new Error();
+
+        // 1) load questions
+        const qs = await qRes.json();
+        setQuestions(qs);
+
+        // 2) load raw submissions
         const { submissions: rawSubs } = await subRes.json();
-        const questions = await qRes.json();
+
+        // 3) load scoreSettings (yearNames)
         const { yearNames } = await sRes.json();
 
-        // build posAttrs, negAttrs & weights
+        // ─── build posAttrs/negAttrs + weights ─────────────────────────────────
         const posAttrs = [],
           negAttrs = [],
           weights = {};
-        questions.forEach((q) => {
+        qs.forEach((q) => {
           const key = String(q.id);
           weights[key] = Number(q.weight) || 0;
           const attr = { key, label: q.text };
-          q.type === "positive" ? posAttrs.push(attr) : negAttrs.push(attr);
+          if (q.type === "positive") posAttrs.push(attr);
+          else negAttrs.push(attr);
         });
 
-        // enrich submissions with posScores/negScores
+        // ─── enrich submissions ────────────────────────────────────────────────
         const enriched = rawSubs.map((sub) => {
           const posScores = {},
             negScores = {};
@@ -234,12 +312,14 @@ export default function ForecastPage() {
           negAttrs.forEach(
             (a) => (negScores[a.key] = Array(yearNames.length).fill(0))
           );
+
           sub.scores.forEach(({ questionId, yearIndex, score, skipped }) => {
             if (skipped) return;
             const k = String(questionId);
-            if (posScores[k]) posScores[k][yearIndex] = score;
-            if (negScores[k]) negScores[k][yearIndex] = score;
+            if (posScores[k] !== undefined) posScores[k][yearIndex] = score;
+            if (negScores[k] !== undefined) negScores[k][yearIndex] = score;
           });
+
           return {
             id: sub.id,
             createdAt: sub.createdAt,
@@ -251,12 +331,15 @@ export default function ForecastPage() {
             yearNames,
           };
         });
-
         setSubmissions(enriched);
+
         setLoading(false);
       })
-      .catch(console.error);
-  }, []);
+      .catch((err) => {
+        console.error("Error loading survey data:", err);
+        setLoading(false);
+      });
+  }, [selectedGraphId]);
 
   // ─── Compute “categories → regions → countries” from contentHierarchyNodes ─
   // Replace <YOUR_PARENT_ID> with actual parent node ID from backend
@@ -457,10 +540,13 @@ export default function ForecastPage() {
     return chartData.map((row) => row.data || 0);
   }, [chartData]);
 
+  // ─── Only run survey-based hooks when we actually have questions & submissions
+  const hasData = questions.length > 0 && submissions.length > 0;
+
   // ─── Compute average scores per year from submissions ──────────────────────
-  const { yearNames: scoreYearNames, averages: avgScores } =
+  const { yearNames: scoreYearNamesAll, averages: avgScoresAll } =
     useAverageYearlyScores(submissions);
-  const avgScoreValues = avgScores.map((a) => Number(a.avg));
+  const avgScoreValuesAll = avgScoresAll.map((a) => Number(a.avg));
 
   // ─── Forecast data (linear regression) ────────────────────────────────────
   const forecastDataLR = useLinearRegressionForecast(
@@ -469,10 +555,18 @@ export default function ForecastPage() {
   );
 
   // ─── Forecast data (survey‐based) ─────────────────────────────────────────
-  const forecastDataScore = useForecastGrowth(
+  const forecastDataScoreAll = useForecastGrowth(
     historicalVolumes,
-    avgScoreValues
+    avgScoreValuesAll
   );
+
+  // 3) then gate their outputs behind hasData
+  const scoreYearNames = hasData ? scoreYearNamesAll : [];
+  // const avgScores      = hasData ? avgScoresAll      : [];
+  // const avgScoreValues = hasData
+  //   ? avgScoreValuesAll
+  //   : [];
+  const forecastDataScore = hasData ? forecastDataScoreAll : [];
 
   // ─── Combine historical + linear forecast ─────────────────────────────────
   const combinedData = useMemo(() => {
@@ -518,6 +612,19 @@ export default function ForecastPage() {
   const { ai_forecast: aiForecast = {}, race_forecast: raceForecast = {} } =
     selectedGraph || {};
 
+  // ─── Determine which forecast types we actually have ─────────────────────
+  const hasLinear = selectedGraph?.forecast_types?.includes("linear");
+  const hasScore = selectedGraph?.forecast_types?.includes("score") && hasData;
+  const hasAI =
+    selectedGraph && Object.keys(selectedGraph.ai_forecast || {}).length > 0;
+  const hasRace =
+    selectedGraph && Object.keys(selectedGraph.race_forecast || {}).length > 0;
+
+  // If there’s more than one of them, we need the “unified” bothData array.
+  const forecastCount = [hasLinear, hasScore, hasAI, hasRace].filter(
+    Boolean
+  ).length;
+
   // right after you destructure aiForecast & raceForecast
   const bothData = useMemo(() => {
     if (!chartData.length) return [];
@@ -561,6 +668,18 @@ export default function ForecastPage() {
     aiForecast,
     raceForecast,
   ]);
+
+  // ─── Build the final array we feed into the chart ────────────────────────
+  let dataToPlot;
+  if (forecastCount > 1) {
+    dataToPlot = bothData;
+  } else if (hasLinear) {
+    dataToPlot = combinedData;
+  } else if (hasScore) {
+    dataToPlot = combinedDataScore;
+  } else {
+    dataToPlot = chartData;
+  }
 
   // ─── Compute CAGR‐style growth for each series ──────────────────────────
   const growthRates = useMemo(() => {
@@ -620,14 +739,14 @@ export default function ForecastPage() {
 
   const legendPayload = useMemo(() => {
     const items = [{ value: "Historical", type: "line", color: "#D64444" }];
-    if (selectedGraph?.forecast_types?.includes("linear")) {
+    if (hasLinear) {
       items.push({
         value: "Forecast (Stats)",
         type: "line",
         color: "#F58C1F",
       });
     }
-    if (selectedGraph?.forecast_types?.includes("score")) {
+    if (hasScore) {
       items.push({
         value: "Forecast (Survey-based)",
         type: "line",
@@ -638,11 +757,11 @@ export default function ForecastPage() {
       items.push({ value: "Forecast (AI)", type: "line", color: "#A17CFF" });
     }
     if (Object.keys(raceForecast).length) {
-      items.push({ value: "Forecast (Race)", type: "line", color: "#FF8A65" });
+      items.push({ value: "Forecast (Race)", type: "line", color: "#ffc107" });
     }
 
     return items;
-  }, [selectedGraph]);
+  }, [selectedGraph, hasScore]);
 
   // compute once, outside the component or at top of component
   const lastHistYear = chartData.length
@@ -722,7 +841,7 @@ export default function ForecastPage() {
   // console.log("volumedatamap ", volumeDataMap);
   // console.log("forecastDataLR ", forecastDataLR);
   // console.log("selected Dataset ", selectedDataset);
-  console.log("chartdata ", chartData);
+  console.log("dataToPlot", dataToPlot);
   // console.log("combineddata" , combinedData);
   // console.log("bothdata ", bothData);
   // console.log("pie data ", pieData);
@@ -730,11 +849,7 @@ export default function ForecastPage() {
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <>
-    
-    
     <div className="forecast-wrapper">
-      
       {adminModalOpen && (
         <motion.div className="modal-overlay admin-modal-overlay">
           <motion.div className="modal-card admin-modal-card">
@@ -1097,7 +1212,9 @@ export default function ForecastPage() {
               </div>
               <button
                 className="nav-btn"
-                onClick={() => router.push("/score-card")}
+                onClick={() =>
+                  router.push(`/score-card?graphId=${selectedGraphId}`)
+                }
               >
                 <FaClipboardList className="btn-icon" />
                 Build Your Own Tailored Forecast
@@ -1458,17 +1575,18 @@ export default function ForecastPage() {
                           const hasLinear =
                             selectedGraph.forecast_types?.includes("linear");
                           const hasScore =
-                            selectedGraph.forecast_types?.includes("score");
+                            selectedGraph?.forecast_types?.includes("score") &&
+                            hasData;
 
-                          // Determine which data array to plot
-                          const dataToPlot =
-                            hasLinear && hasScore
-                              ? bothData
-                              : hasLinear
-                              ? combinedData
-                              : hasScore
-                              ? combinedDataScore
-                              : chartData;
+                          // // Determine which data array to plot
+                          // const dataToPlot =
+                          //   hasLinear && hasScore
+                          //     ? bothData
+                          //     : hasLinear
+                          //     ? combinedData
+                          //     : hasScore
+                          //     ? combinedDataScore
+                          //     : chartData;
 
                           return (
                             <LineChart
@@ -1504,7 +1622,7 @@ export default function ForecastPage() {
                                     stopColor={
                                       hasLinear && hasScore
                                         ? "#D64444"
-                                        : "#1039EE"
+                                        : "#D64444"
                                     }
                                     stopOpacity={0.9}
                                   />
@@ -1513,7 +1631,7 @@ export default function ForecastPage() {
                                     stopColor={
                                       hasLinear && hasScore
                                         ? "#D64444"
-                                        : "#1039EE"
+                                        : "#D64444"
                                     }
                                     stopOpacity={0.3}
                                   />
@@ -1580,7 +1698,7 @@ export default function ForecastPage() {
                               {hasLinear && (
                                 <Line
                                   dataKey={
-                                    hasLinear && hasScore
+                                    hasLinear   
                                       ? "forecastLinear"
                                       : "forecastVolume"
                                   }
@@ -1622,7 +1740,7 @@ export default function ForecastPage() {
                                 <Line
                                   dataKey="forecastRace"
                                   name="Forecast (Race)"
-                                  stroke="#FF8A65"
+                                  stroke="#ffc107"
                                   strokeWidth={2}
                                   strokeDasharray="2 4"
                                   connectNulls
@@ -1678,7 +1796,7 @@ export default function ForecastPage() {
                               />
 
                               <Tooltip
-                                content={<CustomTooltip  chartType="bar"/>}
+                                content={<CustomTooltip chartType="bar" />}
                                 cursor={{ fill: "rgba(255,255,255,0.08)" }}
                               />
                               <Legend
@@ -1810,7 +1928,5 @@ export default function ForecastPage() {
         </div>
       </motion.div>
     </div>
-    
-    </>
   );
 }
