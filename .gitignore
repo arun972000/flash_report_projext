@@ -11,6 +11,8 @@
 
 /public/*
 
+# /app/flash-reports/components/*
+
 # next.js
 /.next/
 /out/

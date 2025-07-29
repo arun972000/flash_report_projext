@@ -8,6 +8,7 @@ import axios from "axios";
 import './signup.css'
 
 import { toast } from "react-toastify";
+import GoogleLoginButton from "@/app/flash-reports/components/Login/GoogleLogin";
 
 // Validation schema for form fields with strong password
 const validationSchema = Yup.object().shape({
@@ -126,7 +127,10 @@ const SignupForm = ({ onSuccess }) => {
             <Button variant="dark" type="submit" disabled={isSubmitting} className="w-100">
               {isSubmitting ? "Signing up..." : "Sign Up"}
             </Button>
-
+            <p className="text-center text-muted mt-2 mb-1">or</p>
+            <div className="d-flex justify-content-center mb-3">
+              <GoogleLoginButton />
+            </div>
           </Form>
         )}
       </Formik>

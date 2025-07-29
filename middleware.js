@@ -8,7 +8,7 @@ const BASIC_PASS = 'letMeIn321';
 export function middleware(req) {
   const { pathname } = req.nextUrl;
 
-  const protectedPaths = ['/admin', '/forecast-new', '/score-card'];
+  const protectedPaths = ['/admin', '/forecast-new'];
   const isProtected = protectedPaths.some((path) => pathname === path || pathname.startsWith(path + '/'));
 
   if (isProtected) {

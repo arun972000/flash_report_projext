@@ -11,7 +11,6 @@ import {
 } from 'recharts';
 import { useMediaQuery } from 'react-responsive';
 
-// Gradient color palette
 const PALETTE = [
   { light: "#15AFE4", dark: "#0D7AAB" },
   { light: "#FFC107", dark: "#B38600" },
@@ -26,10 +25,8 @@ const PALETTE = [
 ];
 
 const getColor = (i) => PALETTE[i % PALETTE.length].light;
-const getDark = (i) => PALETTE[i % PALETTE.length].dark;
 
-// 🧠 Chart UI
-const ChartWithComparison = ({ data, title, showArrow }) => {
+const ChartWithComparison = ({ data, title, showArrow, colorMap }) => {
   const isMobile = useMediaQuery({ query: '(max-width: 576px)' });
 
   const CustomTooltip = ({ active, payload }) => {
@@ -77,14 +74,6 @@ const ChartWithComparison = ({ data, title, showArrow }) => {
       <div style={{ width: "100%", height: isMobile ? 260 : 300 }}>
         <ResponsiveContainer>
           <PieChart>
-            <defs>
-              {data.map((_, i) => (
-                <linearGradient key={i} id={`evGrad-${i}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={getColor(i)} stopOpacity={0.8} />
-                  <stop offset="100%" stopColor={getDark(i)} stopOpacity={0.3} />
-                </linearGradient>
-              ))}
-            </defs>
             <Pie
               data={data}
               dataKey="value"
@@ -98,8 +87,8 @@ const ChartWithComparison = ({ data, title, showArrow }) => {
               labelLine={false}
               label={renderCustomLabel}
             >
-              {data.map((_, i) => (
-                <Cell key={i} fill={`url(#evGrad-${i})`} />
+              {data.map((entry, i) => (
+                <Cell key={i} fill={colorMap[entry.name] || getColor(i)} />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} cursor={false} />
@@ -110,26 +99,48 @@ const ChartWithComparison = ({ data, title, showArrow }) => {
   );
 };
 
-// 📊 Final Chart Component
-const TwoWheelerChart = ({ piedata }) => {
+const monthsList = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+const systemMonthIndex = new Date().getMonth();
+const effectiveCurrentMonthIndex = systemMonthIndex - 1 >= 0 ? systemMonthIndex - 1 : 11;
+const availableMonths = monthsList.slice(0, effectiveCurrentMonthIndex + 1);
+
+const TwoWheelerChart = ({ segmentName, segmentType }) => {
+  const [piedata, setPiedata] = useState([]);
+  const [mode, setMode] = useState("mom");
+  const [selectedMonth, setSelectedMonth] = useState(monthsList[effectiveCurrentMonthIndex]);
   const [sortedLegend, setSortedLegend] = useState([]);
+console.log(segmentName)
+  const fetchData = async () => {
+    try {
+      const res = await fetch(`/api/fetchMarketData?segmentName=${segmentName}&selectedMonth=${selectedMonth}&mode=${mode}&segmentType=${segmentType}`);
+      const json = await res.json();
+      setPiedata(json);
+    } catch (err) {
+      console.error("Client fetch error:", err);
+    }
+  };
 
-  if (!piedata || piedata.length === 0) return null;
+  useEffect(() => {
+    fetchData();
+  }, [mode, selectedMonth]);
 
-  // 🗓️ Sort months chronologically using Date
-  const dateKeys = useMemo(() => {
-    return Object.keys(piedata[0])
-      .filter((k) => k !== "name")
-      .sort((a, b) => new Date(a) - new Date(b)); // Chronological order
-  }, [piedata]);
+  const currentYear = new Date().getFullYear();
+  const lastYear = currentYear - 1;
+  const monthIndex = monthsList.indexOf(selectedMonth);
+  const prevMonth = monthsList[monthIndex - 1] || "dec";
 
-  if (dateKeys.length < 2) return null;
+  const [prevKey, currKey] = useMemo(() => {
+    const currentMonthKey = `${selectedMonth} ${currentYear}`;
+    const previousMonthKey = mode === 'mom'
+      ? `${prevMonth} ${currentYear}`
+      : `${selectedMonth} ${lastYear}`;
+    return [previousMonthKey, currentMonthKey];
+  }, [selectedMonth, mode, currentYear, lastYear, prevMonth]);
 
-  // Process with earlier and later month
   const processedData = useMemo(() => {
     return piedata.map((item) => {
-      const prev = parseFloat(item[dateKeys[0]]) || 0;
-      const curr = parseFloat(item[dateKeys[1]]) || 0;
+      const prev = parseFloat(item[prevKey]) || 0;
+      const curr = parseFloat(item[currKey]) || 0;
       let symbol = "";
       if (curr > prev) symbol = "▲";
       else if (curr < prev) symbol = "▼";
@@ -141,7 +152,7 @@ const TwoWheelerChart = ({ piedata }) => {
         decreased: curr < prev,
       };
     }).sort((a, b) => b.value - a.value);
-  }, [piedata, dateKeys]);
+  }, [piedata, prevKey, currKey]);
 
   useEffect(() => {
     const sorted = [...processedData];
@@ -154,41 +165,74 @@ const TwoWheelerChart = ({ piedata }) => {
     setSortedLegend(sorted);
   }, [processedData]);
 
+  const colorMap = useMemo(() => {
+    const map = {};
+    processedData.forEach((item, i) => {
+      map[item.name] = getColor(i);
+    });
+    return map;
+  }, [processedData]);
+
+  const hasData = piedata.length > 0 && piedata[0][currKey] !== undefined && piedata[0][prevKey] !== undefined;
+
   return (
     <div className="container-fluid px-md-5">
-      <div className="row">
-        {/* Earlier month on left */}
-        <ChartWithComparison
-          data={processedData}
-          title={`MoM - ${dateKeys[0]}`}
-          showArrow={true}
-        />
-        {/* Later month on right */}
-        <ChartWithComparison
-          data={processedData}
-          title={`MoM - ${dateKeys[1]}`}
-          showArrow={false}
-        />
+      <div className="mb-3 text-center d-flex flex-wrap justify-content-center gap-2">
+        <button className={`btn ${mode === "mom" ? "btn-primary" : "btn-light"}`} onClick={() => setMode("mom")}>Month on Month</button>
+        <button className={`btn ${mode === "yoy" ? "btn-primary" : "btn-light"}`} onClick={() => setMode("yoy")}>Year on Year</button>
+        <select
+          className="form-select w-auto"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+        >
+          {availableMonths.map((m) => (
+            <option key={m} value={m}>{m.toUpperCase()}</option>
+          ))}
+        </select>
       </div>
 
-      <div className="mt-4 text-center">
-        <div className="d-flex flex-wrap justify-content-center gap-3">
-          {sortedLegend.map((item, i) => (
-            <div key={item.name} className="d-flex align-items-center">
-              <div
-                style={{
-                  width: 14,
-                  height: 14,
-                  backgroundColor: getColor(i),
-                  marginRight: 6,
-                  borderRadius: "50%",
-                }}
-              />
-              <span style={{ fontSize: "0.6rem" }}>{item.name}</span>
+      {hasData ? (
+        <>
+          <div className="row">
+            <ChartWithComparison
+              data={piedata.map((d) => ({
+                name: d.name,
+                value: parseFloat(d[prevKey]) || 0,
+              }))}
+              title={`${prevKey.toUpperCase()}`}
+              showArrow={false}
+              colorMap={colorMap}
+            />
+            <ChartWithComparison
+              data={processedData}
+              title={`${currKey.toUpperCase()}`}
+              showArrow={true}
+              colorMap={colorMap}
+            />
+          </div>
+
+          <div className="mt-4 text-center">
+            <div className="d-flex flex-wrap justify-content-center gap-3">
+              {sortedLegend.map((item, i) => (
+                <div key={item.name} className="d-flex align-items-center">
+                  <div
+                    style={{
+                      width: 14,
+                      height: 14,
+                      backgroundColor: colorMap[item.name],
+                      marginRight: 6,
+                      borderRadius: "50%",
+                    }}
+                  />
+                  <span style={{ fontSize: "0.6rem" }}>{item.name}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        </>
+      ) : (
+        <div className="text-center text-white py-5">No data available for this selected month.</div>
+      )}
     </div>
   );
 };

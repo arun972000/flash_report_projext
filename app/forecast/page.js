@@ -44,6 +44,7 @@ export default function ForecastPage() {
   const [isDatasetHovering, setIsDatasetHovering] = useState(false);
   const [isRegionsHovering, setIsRegionsHovering] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [mountLoginNav, setMountLoginNav] = useState(false);
 
   // ─── fetched data ─────────────────────────────────────────────────
   const [graphs, setGraphs] = useState([]);
@@ -53,6 +54,7 @@ export default function ForecastPage() {
   const [scoreSettings, setScoreSettings] = useState({ yearNames: [] });
   const [submissions, setSubmissions] = useState([]);
   const [questions, setQuestions] = useState([]);
+  const [userSubmissions, setUserSubmissions] = useState([]);
 
   // ─── user selections ─────────────────────────────────────────────────
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
@@ -260,8 +262,9 @@ export default function ForecastPage() {
   }, []);
 
   // ─── Fetch questions, submissions & scoreSettings for the selected graph ─────────────────
+  // ─── Fetch both “all users” and “this user” submissions ─────────────────
   useEffect(() => {
-    if (!selectedGraphId) return; // wait until a graph is picked
+    if (!selectedGraphId || !email) return;
     setLoading(true);
 
     const authHeader = {
@@ -275,71 +278,81 @@ export default function ForecastPage() {
       fetch(`/api/saveScores?graphId=${selectedGraphId}`, {
         headers: authHeader,
       }),
+      fetch(
+        `/api/saveScores?graphId=${selectedGraphId}&email=${encodeURIComponent(
+          email
+        )}`,
+        { headers: authHeader }
+      ),
       fetch("/api/scoreSettings", { headers: authHeader }),
     ])
-      .then(async ([qRes, subRes, sRes]) => {
-        if (!qRes.ok || !subRes.ok || !sRes.ok) throw new Error();
+      .then(async ([qRes, allRes, userRes, sRes]) => {
+        if (!qRes.ok || !allRes.ok || !userRes.ok || !sRes.ok)
+          throw new Error();
 
-        // 1) load questions
+        // 1) questions
         const qs = await qRes.json();
         setQuestions(qs);
 
-        // 2) load raw submissions
-        const { submissions: rawSubs } = await subRes.json();
+        // 2) raw submissions
+        const { submissions: rawAll } = await allRes.json();
+        const { submissions: rawUser } = await userRes.json();
 
-        // 3) load scoreSettings (yearNames)
+        // 3) scoreSettings
         const { yearNames } = await sRes.json();
 
-        // ─── build posAttrs/negAttrs + weights ─────────────────────────────────
+        // ─── build posAttrs/negAttrs + weights ─────────────────
         const posAttrs = [],
           negAttrs = [],
           weights = {};
         qs.forEach((q) => {
           const key = String(q.id);
           weights[key] = Number(q.weight) || 0;
-          const attr = { key, label: q.text };
-          if (q.type === "positive") posAttrs.push(attr);
-          else negAttrs.push(attr);
+          (q.type === "positive" ? posAttrs : negAttrs).push({
+            key,
+            label: q.text,
+          });
         });
 
-        // ─── enrich submissions ────────────────────────────────────────────────
-        const enriched = rawSubs.map((sub) => {
-          const posScores = {},
-            negScores = {};
-          posAttrs.forEach(
-            (a) => (posScores[a.key] = Array(yearNames.length).fill(0))
-          );
-          negAttrs.forEach(
-            (a) => (negScores[a.key] = Array(yearNames.length).fill(0))
-          );
-
-          sub.scores.forEach(({ questionId, yearIndex, score, skipped }) => {
-            if (skipped) return;
-            const k = String(questionId);
-            if (posScores[k] !== undefined) posScores[k][yearIndex] = score;
-            if (negScores[k] !== undefined) negScores[k][yearIndex] = score;
+        // ─── helper to enrich raw subs ──────────────────────────
+        const enrich = (rawSubs) =>
+          rawSubs.map((sub) => {
+            const posScores = {},
+              negScores = {};
+            posAttrs.forEach(
+              (a) => (posScores[a.key] = Array(yearNames.length).fill(0))
+            );
+            negAttrs.forEach(
+              (a) => (negScores[a.key] = Array(yearNames.length).fill(0))
+            );
+            sub.scores.forEach(({ questionId, yearIndex, score, skipped }) => {
+              if (!skipped) {
+                const k = String(questionId);
+                if (posScores[k] !== undefined) posScores[k][yearIndex] = score;
+                if (negScores[k] !== undefined) negScores[k][yearIndex] = score;
+              }
+            });
+            return {
+              ...sub,
+              posAttributes: posAttrs,
+              negAttributes: negAttrs,
+              posScores,
+              negScores,
+              weights,
+              yearNames,
+            };
           });
 
-          return {
-            id: sub.id,
-            createdAt: sub.createdAt,
-            posAttributes: posAttrs,
-            negAttributes: negAttrs,
-            posScores,
-            negScores,
-            weights,
-            yearNames,
-          };
-        });
-        setSubmissions(enriched);
+        setSubmissions(enrich(rawAll)); // for survey-based AVG
+        setUserSubmissions(enrich(rawUser)); // for BYF
 
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error loading survey data:", err);
+        console.error(err);
         setLoading(false);
       });
-  }, [selectedGraphId]);
+  }, [selectedGraphId, email]);
 
   // ─── Compute “categories → regions → countries” from contentHierarchyNodes ─
   // Replace <YOUR_PARENT_ID> with actual parent node ID from backend
@@ -469,7 +482,47 @@ export default function ForecastPage() {
         return parts.some((part) => selectedCountriesList.includes(part));
       });
     });
-  }, [graphs, volumeDataMap, selectedCountriesList]);
+  }, [graphs, volumeDataMap, selectedCountriesList, selectedRegionId]);
+
+  // use effect for default selection
+  useEffect(() => {
+    if (selectedRegionId) {
+      setSelectedGraphId(availableGraphs[0]?.id);
+    }
+    if (selectedCategoryId != null) return;
+    if (!contentHierarchyNodes.length || !graphs.length) return;
+
+    // 1) find your commercial category
+    const commCat = contentHierarchyNodes.find(
+      (n) => n.name === "Commercial Vehicles"
+    );
+    console.log("comCat", commCat);
+    if (!commCat) return;
+
+    // 2) find its “All Regions” child
+    const allReg = contentHierarchyNodes.find(
+      (n) => n.parent_id === commCat.id && n.name === "All Regions"
+    );
+    console.log("allReg", allReg);
+    if (!allReg) return;
+
+    // 4) set category and region
+    setSelectedCategoryId(commCat.id);
+    setSelectedRegionId(allReg.id);
+
+    console.log("available graphs", availableGraphs);
+    // 3) find your default graph
+    const defaultGraph = availableGraphs.find(
+      (g) => g.name === "Overall Commercial Vehicle Sales Trend Analysis"
+    );
+    console.log("defaultGraph", defaultGraph);
+    if (!defaultGraph) return;
+
+    console.log("we have reached the end");
+
+    //set graph
+    setSelectedGraphId(defaultGraph.id);
+  }, [contentHierarchyNodes, availableGraphs, graphs, selectedCategoryId]);
 
   const selectedDataset = useMemo(() => {
     if (!selectedGraphId) return null;
@@ -547,6 +600,12 @@ export default function ForecastPage() {
   const { yearNames: scoreYearNamesAll, averages: avgScoresAll } =
     useAverageYearlyScores(submissions);
   const avgScoreValuesAll = avgScoresAll.map((a) => Number(a.avg));
+
+  // ─── down near your other forecasts ───────────────────────────────────────
+  const { averages: avgByf } = useAverageYearlyScores(userSubmissions);
+  const byfValues = avgByf.map((a) => Number(a.avg));
+  const forecastDataByf = useForecastGrowth(historicalVolumes, byfValues);
+  const hasByf = forecastDataByf.length > 0;
 
   // ─── Forecast data (linear regression) ────────────────────────────────────
   const forecastDataLR = useLinearRegressionForecast(
@@ -637,6 +696,7 @@ export default function ForecastPage() {
       forecastScore: null,
       forecastAI: null,
       forecastRace: null,
+      forecastByf: null, // ← new
     }));
 
     // 2) carry last actual value into the “0th” forecast point
@@ -646,6 +706,7 @@ export default function ForecastPage() {
       last.forecastScore = last.value;
       last.forecastAI = last.value;
       last.forecastRace = last.value;
+      last.forecastByf = last.value; // ← carry into the 0th BYF point
     }
 
     // 3) single unified slice for all forecasts
@@ -656,6 +717,7 @@ export default function ForecastPage() {
       forecastScore: forecastDataScore[i]?.forecastVolume ?? null,
       forecastAI: aiForecast[yr] ?? null,
       forecastRace: raceForecast[yr] ?? null,
+      forecastByf: forecastDataByf[i]?.forecastVolume ?? null, // ← new
     }));
 
     return [...hist, ...fc];
@@ -667,6 +729,7 @@ export default function ForecastPage() {
     scoreSettings.yearNames,
     aiForecast,
     raceForecast,
+    forecastDataByf,
   ]);
 
   // ─── Build the final array we feed into the chart ────────────────────────
@@ -760,8 +823,11 @@ export default function ForecastPage() {
       items.push({ value: "Forecast (Race)", type: "line", color: "#ffc107" });
     }
 
+    if (hasByf)
+      items.push({ value: "Forecast (BYF)", type: "line", color: "#38CCD4" }); // ← new
+
     return items;
-  }, [selectedGraph, hasScore]);
+  }, [selectedGraph, hasScore, hasByf]);
 
   // compute once, outside the component or at top of component
   const lastHistYear = chartData.length
@@ -1212,9 +1278,9 @@ export default function ForecastPage() {
               </div>
               <button
                 className="nav-btn"
-                onClick={() =>
-                  router.push(`/score-card?graphId=${selectedGraphId}`)
-                }
+                onClick={() => {
+                  router.push(`/score-card?graphId=${selectedGraphId}`);
+                }}
               >
                 <FaClipboardList className="btn-icon" />
                 Build Your Own Tailored Forecast
@@ -1226,7 +1292,16 @@ export default function ForecastPage() {
                 <FaBolt className="btn-icon" />
                 Flash Reports
               </button>
-              <LoginNavButton/>
+              {mountLoginNav || planName ? (
+                <LoginNavButton />
+              ) : (
+                <button
+                  className="nav-btn ms-auto"
+                  onClick={() => setMountLoginNav(true)}
+                >
+                  Login
+                </button>
+              )}
             </div>
           </div>
 
@@ -1253,6 +1328,11 @@ export default function ForecastPage() {
                     <div
                       key={cat.id}
                       onClick={() => {
+                        if (!email) {
+                          // user isn’t logged in — defer to LoginNavButton
+                          setMountLoginNav(true);
+                          return;
+                        }
                         if (locked) return;
                         setSelectedCategoryId(cat.id);
                         setSelectedRegionId(null);
@@ -1343,6 +1423,11 @@ export default function ForecastPage() {
                         >
                           <strong
                             onClick={(e) => {
+                              if (!email) {
+                                // user isn’t logged in — defer to LoginNavButton
+                                setMountLoginNav(true);
+                                return;
+                              }
                               if (isSilverRestricted) return;
                               e.preventDefault();
                               e.stopPropagation();
@@ -1387,6 +1472,11 @@ export default function ForecastPage() {
                                   disabled={disabled}
                                   checked={selectedRegionId === cn.id}
                                   onChange={() => {
+                                    if (!email) {
+                                      // user isn’t logged in — defer to LoginNavButton
+                                      setMountLoginNav(true);
+                                      return;
+                                    }
                                     if (disabled) return;
                                     setSelectedRegionId(
                                       selectedRegionId === cn.id ? null : cn.id
@@ -1427,7 +1517,14 @@ export default function ForecastPage() {
                     {availableGraphs.map((opt) => (
                       <div
                         key={opt.id}
-                        onClick={() => setSelectedGraphId(opt.id)}
+                        onClick={() => {
+                          if (!email) {
+                            // user isn’t logged in — defer to LoginNavButton
+                            setMountLoginNav(true);
+                            return;
+                          }
+                          setSelectedGraphId(opt.id);
+                        }}
                         className="mt-1"
                         style={{
                           cursor: "pointer",
@@ -1698,7 +1795,7 @@ export default function ForecastPage() {
                               {hasLinear && (
                                 <Line
                                   dataKey={
-                                    hasLinear   
+                                    hasLinear
                                       ? "forecastLinear"
                                       : "forecastVolume"
                                   }
@@ -1745,6 +1842,17 @@ export default function ForecastPage() {
                                   strokeDasharray="2 4"
                                   connectNulls
                                   animationBegin={600}
+                                />
+                              )}
+                              {hasByf && (
+                                <Line
+                                  dataKey="forecastByf"
+                                  name="Forecast (BYF)"
+                                  stroke="#38CCD4"
+                                  strokeWidth={2}
+                                  strokeDasharray="3 3"
+                                  connectNulls
+                                  animationBegin={750}
                                 />
                               )}
                             </LineChart>

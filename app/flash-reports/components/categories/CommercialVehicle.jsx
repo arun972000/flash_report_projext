@@ -13,6 +13,95 @@ import CommercialVehicleBarChart from '../charts/Barchart/stackBarChart'
 import Image from 'next/image'
 
 import CVPieChart from '../dynamic-charts/OEM_Charts/CM-PieChart'
+import LineChartWithTotal from '../charts/NewTestLineChart'
+
+
+async function transformOverallChartData() {
+  const token = "your-very-strong-random-string-here";
+
+  const [hierarchyRes, volumeRes] = await Promise.all([
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/contentHierarchy`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }),
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/volumeData`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }),
+  ]);
+
+  const hierarchyData = await hierarchyRes.json();
+  const volumeData = await volumeRes.json();
+
+  // Step 1: Resolve hierarchy stream ID for: MAIN ROOT > flash-reports > overall
+  const mainRoot = hierarchyData.find((n) => n.name.toLowerCase() === "main root");
+  if (!mainRoot) return [];
+
+  const flashReports = hierarchyData.find((n) => n.name.toLowerCase() === "flash-reports" && n.parent_id === mainRoot.id);
+  if (!flashReports) return [];
+
+  const overall = hierarchyData.find((n) => n.name.toLowerCase() === "overall" && n.parent_id === flashReports.id);
+  if (!overall) return [];
+
+  // Step 2: Collect all children of 'overall' (these are years like 2024, 2025)
+  const yearNodes = hierarchyData.filter((n) => n.parent_id === overall.id);
+
+  const result = [];
+
+  for (const yearNode of yearNodes) {
+    const year = yearNode.name;
+    const monthNodes = hierarchyData.filter((n) => n.parent_id === yearNode.id);
+
+    for (const monthNode of monthNodes) {
+      const streamPath = [mainRoot.id, flashReports.id, overall.id, yearNode.id, monthNode.id].join(",");
+
+      const matchedEntry = volumeData.find((v) => v.stream === streamPath);
+      if (!matchedEntry || !matchedEntry.data) continue;
+
+      const entry = {
+        month: `${year}-${String(monthsList.indexOf(monthNode.name.toLowerCase()) + 1).padStart(2, '0')}`,
+      };
+
+      // Map volume values
+      for (const [key, value] of Object.entries(matchedEntry.data)) {
+        let mappedKey = key.toLowerCase().trim();
+        if (mappedKey === "two wheeler") mappedKey = "2-wheeler";
+        if (mappedKey === "three wheeler") mappedKey = "3-wheeler";
+        entry[mappedKey] = value;
+      }
+
+      // Calculate total
+      const vehicleKeys = [
+        "2-wheeler",
+        "3-wheeler",
+        "passenger",
+        "cv",
+        "tractor",
+        "truck",
+        "bus",
+      ];
+      entry.total = vehicleKeys.reduce((sum, key) => sum + (entry[key] || 0), 0);
+
+      result.push(entry);
+    }
+  }
+
+  // Optional: Sort by month ascending
+  result.sort((a, b) => new Date(a.month) - new Date(b.month));
+
+  return result;
+
+}
+
+const monthsList = [
+  "jan", "feb", "mar", "apr", "may", "jun",
+  "jul", "aug", "sep", "oct", "nov", "dec"
+];
+
 
 async function fetchCommercialVehicleData() {
   const token = "your-very-strong-random-string-here";
@@ -210,7 +299,7 @@ const CommercialVehicle = async () => {
     const commercialTextRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`, { cache: 'no-store' })
     const commercialText = await commercialTextRes.json();
 
-    const mergedData = await fetchCommercialMarketShareData();
+    const mergedData = await transformOverallChartData();
     const mergedDataCV = await fetchCVBarChartData();
 
     return (
@@ -228,10 +317,13 @@ const CommercialVehicle = async () => {
                         </div>
 
                         <div className='col-12 mt-3'>
-                            {/* <CM_Piechart /> */}
-                            {/* <CommercialVehicleChart piedata={mergedData} /> */}
+                        <CommercialVehicleChart segmentName="commercial vehicle" segmentType='market share' />
+                    </div>
+
+                        {/* <div className='col-12 mt-3'>
+
                             <CVPieChart/>
-                        </div>
+                        </div> */}
 
                         <div className='col-12 mt-5'>
                             <h3>Commercial Vehicles Segmental Split</h3>
@@ -242,10 +334,9 @@ const CommercialVehicle = async () => {
 
                         <div className='col-12'>
                             <h3 className="mt-4">Forecast Chart</h3>
-                            <CommercialVehicleReport />
+                            {/* <CommercialVehicleReport /> */}
+                            <LineChartWithTotal overallData={mergedData} category='CV'/>
                         </div>
-
-
 
                         <div className="container mt-5">
                             <h2 className="text-center mb-4" style={{ fontWeight: '700' }}>

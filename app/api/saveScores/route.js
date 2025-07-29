@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 export async function GET(request) {
   const url = new URL(request.url);
   const graphId = url.searchParams.get("graphId");
+  const email   = url.searchParams.get("email");   // ← new
 
   let conn;
   try {
@@ -28,10 +29,18 @@ export async function GET(request) {
     `;
     const params = [];
 
-    // If graphId is provided, filter by it
+    // build WHERE clauses
+    const wheres = [];
     if (graphId) {
-      sql += ` WHERE s.graph_id = ?`;
+      wheres.push(`s.graph_id = ?`);
       params.push(graphId);
+    }
+    if (email) {
+      wheres.push(`s.user_email = ?`);
+      params.push(email);
+    }
+    if (wheres.length) {
+      sql += ` WHERE ` + wheres.join(" AND ");
     }
 
     sql += `
@@ -82,6 +91,7 @@ export async function GET(request) {
     if (conn) conn.release();
   }
 }
+
 
 export async function POST(request) {
   const { user, graphId, results } = await request.json();

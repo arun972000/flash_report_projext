@@ -4,11 +4,12 @@ import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "./score.css";
-import { notification } from "antd";
+import { notification, Button } from "antd";
 import Image from "next/image";
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useCurrentPlan } from "../hooks/useCurrentPlan";
 import { useRouter, useSearchParams } from "next/navigation";
+import LoginNavButton from "../flash-reports/components/Login/LoginAuthButton";
 
 export default function ScoreCard() {
   const router = useRouter();
@@ -24,24 +25,61 @@ export default function ScoreCard() {
   const [incompleteFlags, setIncompleteFlags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [graphName, setGraphName] = useState("");
+  const [categoryName, setCategoryName] = useState("");
+  const [loadingMeta, setLoadingMeta] = useState(true);
 
   // 0) load the graph’s metadata (name, etc.)
   useEffect(() => {
     async function fetchGraph() {
       try {
-        const res = await fetch("/api/graphs", {
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
-          },
-        });
-        const all = await res.json();
-        const g = all.find((g) => String(g.id) === graphId);
-        if (g) setGraphName(g.name);
+        const graphs = await (
+          await fetch("/api/graphs", {
+            headers: {
+              Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
+            },
+          })
+        ).json();
+        const g = graphs.find((g) => String(g.id) === graphId);
+        if (!g) return;
+
+        setGraphName(g.name);
+
+        // dataset id
+        const dsId = g.dataset_ids;
+        if (!dsId) return;
+
+        // fetch volumeData and find matching entry
+        const vols = await (
+          await fetch("/api/volumeData", {
+            headers: {
+              Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
+            },
+          })
+        ).json();
+        const entry = vols.find((v) => Number(v.id) === Number(dsId));
+        if (!entry?.stream) return;
+
+        // take the 3rd ID from the CSV stream
+        const nodeId = Number(entry.stream.split(",")[2]);
+        if (isNaN(nodeId)) return;
+
+        // fetch hierarchy and pick its name
+        const nodes = await (
+          await fetch("/api/contentHierarchy", {
+            headers: {
+              Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
+            },
+          })
+        ).json();
+        const node = nodes.find((n) => Number(n.id) === nodeId);
+        if (node) setCategoryName(node.name);
       } catch (err) {
-        console.error("Couldn’t load graph name:", err);
+        console.error(err);
+      } finally {
+        setLoadingMeta(false);
       }
     }
-    fetchGraph();
+    if (graphId) fetchGraph();
   }, [graphId]);
 
   // 1) Load questions + settings
@@ -217,11 +255,36 @@ export default function ScoreCard() {
 
   const isBarrierHeader = value - 1 >= driversCount;
 
+  const handleSuggestions = () => {
+    // build subject line
+    const subject = `Score card suggestions for ${categoryName} – ${graphName}`;
+    // build a starter body (feel free to tweak)
+    const body = [
+      `Hello team,`,
+      ``,
+      `I have some suggestions for the score card "${categoryName} – ${graphName}".`,
+      `Please see below:`,
+      ``,
+      `1. …`,
+      `2. …`,
+      ``,
+      `Thanks,`,
+      `${email || "—"}`,
+    ].join("\n");
+    // open user’s mail client
+    window.location.href =
+      `mailto:info@raceautoindia.com` + // preset the To: line
+      `?subject=${encodeURIComponent(subject)}` +
+      `&body=${encodeURIComponent(body)}`;
+  };
+
   // If they somehow navigated here without a graphId, send them back
   if (!graphId) {
     router.replace("/forecast");
     return null;
   }
+
+  if (loadingMeta) return <div>Loading…</div>;
 
   // While we’re waiting on the API…
   if (loading) {
@@ -238,6 +301,11 @@ export default function ScoreCard() {
 
   return (
     <div className="container-wrapper shadow custom-border m-4">
+      {/* Login logic */}
+      <div style={{ display: "none" }}>
+        <LoginNavButton />
+      </div>
+
       {/* Header + Next/Submit */}
       <div className="container-fluid p-0 m-0 mt-3">
         <div
@@ -256,6 +324,7 @@ export default function ScoreCard() {
               className="mb-0 fw-bold"
               style={{ color: "#12298C", fontSize: "35px" }}
             >
+              {categoryName ? `${categoryName} – ` : ""}
               {graphName || "Loading…"}
             </h1>
             <h4 className="mb-0" style={{ fontSize: "20px" }}>
@@ -401,11 +470,12 @@ export default function ScoreCard() {
         <div className="d-inline" style={{ fontSize: "16px" }}>
           <span className="text-danger">Note:</span>{" "}
           <span className="ms-1 mt-2">
-            These questions assess key factors shaping the CV industry, with
-            positive ones highlighting growth drivers and negative ones
-            identifying challenges. Higher impact responses indicate strong
-            market shifts, while lower ones suggest stability. This approach
-            enables better forecasting and strategic planning.
+            These questions assess key factors shaping the{" "}
+            <strong>{categoryName || "CV"} industry</strong>, with positive ones
+            highlighting growth drivers and negative ones identifying
+            challenges. Higher impact responses indicate strong market shifts,
+            while lower ones suggest stability. This approach enables better
+            forecasting and strategic planning.
           </span>
         </div>
 
@@ -465,8 +535,36 @@ export default function ScoreCard() {
               ❯
             </button>
           </div>
-          <div className="mt-2 fw-bold fs-5" style={{ color: "#12298C" }}>
-            {value}/{totalPages}
+          {/* new */}
+          <div
+            className="position-relative mt-4"
+            style={{ height: "1.5rem" /* enough for your font-size */ }}
+          >
+            {/* centered page count */}
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                transform: "translateX(-50%)",
+                color: "#12298C",
+                fontWeight: 600,
+                fontSize: "1.25rem",
+              }}
+            >
+              {value}/{totalPages}
+            </div>
+
+            {/* offset button, tweak the 2rem as needed */}
+            <Button
+              type="link"
+              onClick={handleSuggestions}
+              style={{
+                position: "absolute",
+                left: "40em",
+              }}
+            >
+              Have suggestions?
+            </Button>
           </div>
         </div>
 

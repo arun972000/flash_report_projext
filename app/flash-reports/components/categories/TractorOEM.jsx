@@ -1,7 +1,7 @@
 import dynamic from "next/dynamic";
 import TractorApplication from "../DummyAppSplit/Tractor";
 import Tractor_EV from '../ev/Tractor_ev'
-
+import LineChartWithTotal from '../charts/NewTestLineChart'
 import TractorChart from '../charts/Piechart/PieChart'
 import TractorApp from '../charts/Piechart/AppicationPiechart'
 
@@ -15,7 +15,7 @@ import './category.css'
 import Tractor_PieChart from "../dynamic-charts/OEM_Charts/TractorPieChart";
 
 
-async function fetchTractorData() {
+async function transformOverallChartData() {
   const token = "your-very-strong-random-string-here";
 
   const [hierarchyRes, volumeRes] = await Promise.all([
@@ -36,38 +36,125 @@ async function fetchTractorData() {
   const hierarchyData = await hierarchyRes.json();
   const volumeData = await volumeRes.json();
 
-  const overallNode = hierarchyData.find(
-    (n) => n.name.toLowerCase() === "overall chart"
-  );
-  if (!overallNode) return [];
+  // Step 1: Resolve hierarchy stream ID for: MAIN ROOT > flash-reports > overall
+  const mainRoot = hierarchyData.find((n) => n.name.toLowerCase() === "main root");
+  if (!mainRoot) return [];
 
-  const buildPath = (id) => {
-    const path = [];
-    let current = hierarchyData.find((n) => n.id === id);
-    while (current) {
-      path.unshift(current.id);
-      current = hierarchyData.find((n) => n.id === current.parent_id);
+  const flashReports = hierarchyData.find((n) => n.name.toLowerCase() === "flash-reports" && n.parent_id === mainRoot.id);
+  if (!flashReports) return [];
+
+  const overall = hierarchyData.find((n) => n.name.toLowerCase() === "overall" && n.parent_id === flashReports.id);
+  if (!overall) return [];
+
+  // Step 2: Collect all children of 'overall' (these are years like 2024, 2025)
+  const yearNodes = hierarchyData.filter((n) => n.parent_id === overall.id);
+
+  const result = [];
+
+  for (const yearNode of yearNodes) {
+    const year = yearNode.name;
+    const monthNodes = hierarchyData.filter((n) => n.parent_id === yearNode.id);
+
+    for (const monthNode of monthNodes) {
+      const streamPath = [mainRoot.id, flashReports.id, overall.id, yearNode.id, monthNode.id].join(",");
+
+      const matchedEntry = volumeData.find((v) => v.stream === streamPath);
+      if (!matchedEntry || !matchedEntry.data) continue;
+
+      const entry = {
+        month: `${year}-${String(monthsList.indexOf(monthNode.name.toLowerCase()) + 1).padStart(2, '0')}`,
+      };
+
+      // Map volume values
+      for (const [key, value] of Object.entries(matchedEntry.data)) {
+        let mappedKey = key.toLowerCase().trim();
+        if (mappedKey === "two wheeler") mappedKey = "2-wheeler";
+        if (mappedKey === "three wheeler") mappedKey = "3-wheeler";
+        entry[mappedKey] = value;
+      }
+
+      // Calculate total
+      const vehicleKeys = [
+        "2-wheeler",
+        "3-wheeler",
+        "passenger",
+        "cv",
+        "tractor",
+        "truck",
+        "bus",
+      ];
+      entry.total = vehicleKeys.reduce((sum, key) => sum + (entry[key] || 0), 0);
+
+      result.push(entry);
     }
-    return path.join(",");
-  };
+  }
 
-  const streamPath = buildPath(overallNode.id);
-  const matchedEntry = volumeData.find((v) => v.stream === streamPath);
-  if (!matchedEntry) return [];
+  // Optional: Sort by month ascending
+  result.sort((a, b) => new Date(a.month) - new Date(b.month));
 
-  const segmentData = matchedEntry.data;
-  const twoWheelerKey = Object.keys(segmentData).find(
-    (k) => k.toLowerCase() === "tractor"
-  );
+  return result;
 
-  if (!twoWheelerKey) return [];
+}
 
-  const monthValues = segmentData[twoWheelerKey];
+const monthsList = [
+  "jan", "feb", "mar", "apr", "may", "jun",
+  "jul", "aug", "sep", "oct", "nov", "dec"
+];
 
-  return Object.entries(monthValues).map(([month, value]) => ({
-    month,
-    value,
-  }));
+
+async function fetchTractorData() {
+    const token = "your-very-strong-random-string-here";
+
+    const [hierarchyRes, volumeRes] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/contentHierarchy`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/volumeData`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+        }),
+    ]);
+
+    const hierarchyData = await hierarchyRes.json();
+    const volumeData = await volumeRes.json();
+
+    const overallNode = hierarchyData.find(
+        (n) => n.name.toLowerCase() === "overall chart"
+    );
+    if (!overallNode) return [];
+
+    const buildPath = (id) => {
+        const path = [];
+        let current = hierarchyData.find((n) => n.id === id);
+        while (current) {
+            path.unshift(current.id);
+            current = hierarchyData.find((n) => n.id === current.parent_id);
+        }
+        return path.join(",");
+    };
+
+    const streamPath = buildPath(overallNode.id);
+    const matchedEntry = volumeData.find((v) => v.stream === streamPath);
+    if (!matchedEntry) return [];
+
+    const segmentData = matchedEntry.data;
+    const twoWheelerKey = Object.keys(segmentData).find(
+        (k) => k.toLowerCase() === "tractor"
+    );
+
+    if (!twoWheelerKey) return [];
+
+    const monthValues = segmentData[twoWheelerKey];
+
+    return Object.entries(monthValues).map(([month, value]) => ({
+        month,
+        value,
+    }));
 }
 
 
@@ -193,7 +280,7 @@ async function fetchTractorAppData() {
     const monthNodes = hirarchydata
         .filter((n) => n.parent_id === marketShareNode.id)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(0,1); // Last 1 months
+        .slice(0, 1); // Last 1 months
 
     // Step 4: Merge data by company name
     const merged = {};
@@ -289,9 +376,9 @@ const TractorOEM = async () => {
     const tractorTextRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`, { cache: 'no-store' })
     const tractorText = await tractorTextRes.json();
 
-        const mergedData = await fetchTractorData();
+    const mergedData = await transformOverallChartData();
     const mergedDataMarket = await fetchTractorMarketShareData();
-    
+
     const mergedDataApp = await fetchTractorAppData();
     const mergedDataEV = await fetchTractorEVData();
 
@@ -311,8 +398,10 @@ const TractorOEM = async () => {
                     </div>
 
                     <div className='col-12 mt-3'>
-                        <Tractor_PieChart />
-                        {/* <TractorChart piedata={mergedDataMarket}/> */}
+                        {/* <TwoWheelerChart piedata={mergedDataMarket} /> */}
+                        <TractorChart segmentName="tractor" segmentType='market share' />
+
+
                     </div>
                     {/* <div className="col-12 mt-5">
                         <Tractor_EV />
@@ -321,7 +410,8 @@ const TractorOEM = async () => {
                         <h3 className="mt-4">
                             Forecast Chart
                         </h3>
-                        <TractorForecast />
+                        {/* <TractorForecast /> */}
+                        <LineChartWithTotal overallData={mergedData} category='TRAC'/>
                     </div>
 
                     <div className="col-12">
@@ -329,7 +419,7 @@ const TractorOEM = async () => {
                             Application Chart
                         </h3>
                         {/* <TractorApplication /> */}
-                        <TractorApp data={mergedDataApp} />
+                        <TractorApp segmentName='tractor' />
                     </div>
                 </div>
             </div>
