@@ -15,13 +15,13 @@ export default function AuthModal({ show, onClose }) {
     <Modal show={show} onHide={isHome ? onClose : undefined} centered size="sm">
       <Modal.Body className="position-relative">
         {/* Show close button only on home path */}
-        {isHome && (
+        {/* {isHome && (
           <div className="position-absolute top-0 end-0 m-2">
             <CloseButton onClick={onClose} />
           </div>
-        )}
+        )} */}
 
-
+        <CloseButton onClick={onClose} />
         <div className="d-flex justify-content-center mb-3 ">
           <div className="btn-group me-3" role="group" >
             <button

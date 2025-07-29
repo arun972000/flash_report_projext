@@ -8,6 +8,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { PiEyeFill, PiEyeSlashFill } from 'react-icons/pi';
 import './login.css';
+import GoogleLoginButton from './GoogleLogin'
 
 // Validation Schema
 const validationSchema = Yup.object({
@@ -116,6 +117,10 @@ const LoginForm = ({ onSuccess }) => {
             <Button variant="dark" type="submit" className="w-100" disabled={isSubmitting}>
               {isSubmitting ? 'Logging in...' : 'Login'}
             </Button>
+            <p className="text-center text-muted mt-2 mb-1">or</p>
+            <div className="d-flex justify-content-center mb-3">
+              <GoogleLoginButton />
+            </div>
           </Form>
         )}
       </Formik>
