@@ -7,42 +7,42 @@ import { MdOutlineBikeScooter } from 'react-icons/md'
 const BottomMenuBar = () => (
   <>
     <nav className="bottom-menu">
-      <Link href="/" aria-label="Home" className="menu-item">
+      <Link href="/flash-reports" aria-label="Home" className="menu-item">
         <div className="icon-wrapper">
           <FaHome size={24} />
           <span className="label">Home</span>
         </div>
       </Link>
 
-      <Link href="/two-wheeler" aria-label="Two Wheeler" className="menu-item">
+      <Link href="/flash-reports/two-wheeler" aria-label="Two Wheeler" className="menu-item">
         <div className="icon-wrapper">
           <FaMotorcycle size={24} />
           <span className="label">2W</span>
         </div>
       </Link>
 
-      <Link href="/three-wheeler" aria-label="Three Wheeler" className="menu-item">
+      <Link href="/flash-reports/three-wheeler" aria-label="Three Wheeler" className="menu-item">
         <div className="icon-wrapper">
           <MdOutlineBikeScooter size={24} />
           <span className="label">3W</span>
         </div>
       </Link>
 
-      <Link href="/passenger-vehicle" aria-label="Passenger Vehicle" className="menu-item">
+      <Link href="/flash-reports/passenger-vehicle" aria-label="Passenger Vehicle" className="menu-item">
         <div className="icon-wrapper">
           <FaCarSide size={24} />
           <span className="label">PV</span>
         </div>
       </Link>
 
-      <Link href="/commercial-vehicle" aria-label="Commercial Vehicle" className="menu-item">
+      <Link href="/flash-reports/commercial-vehicle" aria-label="Commercial Vehicle" className="menu-item">
         <div className="icon-wrapper">
           <FaTruckPickup size={24} />
           <span className="label">CV</span>
         </div>
       </Link>
 
-      <Link href="/tractor" aria-label="Tractor" className="menu-item">
+      <Link href="/flash-reports/tractor" aria-label="Tractor" className="menu-item">
         <div className="icon-wrapper">
           <FaTractor size={24} />
           <span className="label">Tractor</span>
