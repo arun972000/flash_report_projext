@@ -2,9 +2,11 @@ import React from 'react';
 
 const ForecastTable = () => {
   const startMonth = 6; // July
-  const months = Array.from({ length: 7 }, (_, i) =>
-    new Date(0, startMonth + i).toLocaleString('default', { month: 'short' })
-  );
+  const baseDate = new Date(2025, startMonth, 1); // July 2025
+  const months = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, 1);
+    return `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
+  });
 
   const data = {
     'Total Sales': [4257, 4022, 5015, 5856, 5122, 4568, 5950]
@@ -14,12 +16,12 @@ const ForecastTable = () => {
     <div style={{ padding: 20, color: '#fff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <h3 style={{ marginBottom: 8 }}>Tipper Sales Performance</h3>
-        <div style={{
+        {/* <div style={{
           fontSize: '20px',
           fontWeight: 'bold',
           color: '#ccc',
           paddingRight: '5px'
-        }}>July 2025</div>
+        }}>July 2025</div> */}
       </div>
 
       <table style={{
