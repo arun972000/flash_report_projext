@@ -36,21 +36,56 @@ const abbreviate = v =>
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: 'rgba(30,30,30,0.9)', padding: 10, borderRadius: 6, color: '#fff', fontSize: 12 }}>
-      <div><strong>{label}</strong></div>
-      {payload.map(p => (
-        <div key={p.dataKey} style={{ color: p.color }}>
-          {p.name}: {abbreviate(p.value)}
-        </div>
-      ))}
-    </div>
+    <>
+      <div style={{ background: 'rgba(30,30,30,0.9)', padding: 10, borderRadius: 6, color: '#fff', fontSize: 12 }}>
+        <div><strong>{label}</strong></div>
+        {payload.map(p => (
+          <div key={p.dataKey} style={{ color: p.color }}>
+            {p.name}: {abbreviate(p.value)}
+          </div>
+        ))}
+      </div>
+      <style jsx>{`
+        .tooltip-card {
+          background: rgba(20, 20, 20, 0.9);
+          padding: var(--space-sm, 8px);
+          border-radius: var(--radius, 6px);
+          box-shadow: var(--shadow-deep, 0 6px 20px rgba(0, 0, 0, 0.5));
+          color: rgba(255, 255, 255, 0.85);
+          font-size: 0.875rem;
+        }
+
+        .tooltip-label {
+          margin: 0 0 6px 0;
+          font-weight: 600;
+          color: var(--fg, #ffc107);
+        }
+
+        .tooltip-item {
+          display: flex;
+          align-items: center;
+          margin-bottom: 4px;
+        }
+
+        .tooltip-item:last-child {
+          margin-bottom: 0;
+        }
+
+        .dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          margin-right: 6px;
+          display: inline-block;
+        }
+      `}</style>
+    </>
   );
 };
 
 const CustomLineChart = ({ overallData, category }) => {
   const selectedCat = category;
   const [chartData, setChartData] = useState([]);
-
   useEffect(() => {
     if (!overallData || !overallData.length) return;
 
@@ -181,50 +216,104 @@ const CustomLineChart = ({ overallData, category }) => {
         </select>
       </div>
 
+      <div className='chart-card'>
+        <div className="text-center text-warning fw-bold mb-2">GROWTH RATES</div>
+        <div className="d-flex justify-content-center gap-4 flex-wrap text-white small mb-3">
+          <span style={{ color: catColors[selectedCat] }}>{growthRates.historical?.toFixed(1)}% Historical</span>
+          <span style={{ color: forecastColors.linear }}>{growthRates.linear?.toFixed(1)}% Forecast (Stats)</span>
+          <span style={{ color: forecastColors.score }}>{growthRates.score?.toFixed(1)}% Forecast (Survey)</span>
+          <span style={{ color: forecastColors.ai }}>{growthRates.ai?.toFixed(1)}% Forecast (AI)</span>
+          <span style={{ color: forecastColors.race }}>{growthRates.race?.toFixed(1)}% Forecast (Race)</span>
+        </div>
 
-      <div className="text-center text-warning fw-bold mb-2">GROWTH RATES</div>
-      <div className="d-flex justify-content-center gap-4 flex-wrap text-white small mb-3">
-        <span style={{ color: catColors[selectedCat] }}>{growthRates.historical?.toFixed(1)}% Historical</span>
-        <span style={{ color: forecastColors.linear }}>{growthRates.linear?.toFixed(1)}% Forecast (Stats)</span>
-        <span style={{ color: forecastColors.score }}>{growthRates.score?.toFixed(1)}% Forecast (Survey)</span>
-        <span style={{ color: forecastColors.ai }}>{growthRates.ai?.toFixed(1)}% Forecast (AI)</span>
-        <span style={{ color: forecastColors.race }}>{growthRates.race?.toFixed(1)}% Forecast (Race)</span>
+        <ResponsiveContainer width="100%" height={400}>
+          <LineChart data={chartData} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+            <CartesianGrid stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
+            <XAxis
+              dataKey="month"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
+            />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#FFC107", fontSize: 12 }}
+              tickFormatter={abbreviate}
+              tickCount={5}
+              domain={["auto", "auto"]}
+              interval="preserveStartEnd"
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend wrapperStyle={{ marginTop: 24 }} />
+            <Brush
+              dataKey="month"
+              height={12}
+              stroke="rgba(255,255,255,0.4)"
+              fill="rgba(255,255,255,0.08)"
+              strokeWidth={1}
+              tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 9 }}
+              tickMargin={4}
+              traveller={
+                <Rectangle
+                  width={6}
+                  height={16}
+                  radius={3}
+                  fill="rgba(255,255,255,0.6)"
+                  stroke="rgba(255,255,255,0.4)"
+                  strokeWidth={1}
+                  cursor="ew-resize"
+                />
+              }
+            />
+            <Line type="linear" dataKey={selectedCat} name="Historical" stroke={catColors[selectedCat]} strokeWidth={3} connectNulls dot={{ r: 2 }} />
+            <Line
+              type="linear"
+              dataKey={`${selectedCat}_forecast_linear`}
+              name={`Forecast (Stats)`}
+              stroke={forecastColors.linear}
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              dot={false}
+              connectNulls
+              animationBegin={150}
+            />
+            <Line
+              type="linear"
+              dataKey={`${selectedCat}_forecast_score`}
+              name={`Forecast (Survey-based)`}
+              stroke={forecastColors.score}
+              strokeWidth={2}
+              strokeDasharray="2 2"
+              dot={false}
+              connectNulls
+              animationBegin={300}
+            />
+            <Line
+              type="linear"
+              dataKey={`${selectedCat}_forecast_ai`}
+              name={`Forecast (AI)`}
+              stroke={forecastColors.ai}
+              strokeWidth={2}
+              strokeDasharray="4 4"
+              dot={false}
+              connectNulls
+              animationBegin={450}
+            />
+            <Line
+              type="linear"
+              dataKey={`${selectedCat}_forecast_race`}
+              name={`Forecast (Race)`}
+              stroke={forecastColors.race}
+              strokeWidth={2}
+              strokeDasharray="2 4"
+              dot={false}
+              connectNulls
+              animationBegin={600}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
-
-      <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={chartData} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
-          <CartesianGrid stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
-          <XAxis dataKey="month" tick={{ fill: '#ccc' }} />
-          <YAxis tickFormatter={abbreviate} tick={{ fill: '#FFC107' }} />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          <Brush
-            dataKey="month"
-            height={12}
-            stroke="rgba(255,255,255,0.4)"
-            fill="rgba(255,255,255,0.08)"
-            strokeWidth={1}
-            tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 9 }}
-            tickMargin={4}
-            traveller={
-              <Rectangle
-                width={6}
-                height={16}
-                radius={3}
-                fill="rgba(255,255,255,0.6)"
-                stroke="rgba(255,255,255,0.4)"
-                strokeWidth={1}
-                cursor="ew-resize"
-              />
-            }
-          />
-          <Line type="linear" dataKey={selectedCat} name="Historical" stroke={catColors[selectedCat]} strokeWidth={3} connectNulls dot={{ r: 2 }} />
-          <Line type="linear" dataKey={`${selectedCat}_forecast_linear`} name="Forecast (Stats)" stroke={forecastColors.linear} strokeWidth={2} strokeDasharray="5 5" dot={false} connectNulls />
-          <Line type="linear" dataKey={`${selectedCat}_forecast_score`} name="Forecast (Survey)" stroke={forecastColors.score} strokeWidth={2} strokeDasharray="3 3" dot={false} connectNulls />
-          <Line type="linear" dataKey={`${selectedCat}_forecast_ai`} name="Forecast (AI)" stroke={forecastColors.ai} strokeWidth={2} strokeDasharray="2 2" dot={false} connectNulls />
-          <Line type="linear" dataKey={`${selectedCat}_forecast_race`} name="Forecast (Race)" stroke={forecastColors.race} strokeWidth={2} strokeDasharray="1 2" dot={false} connectNulls />
-        </LineChart>
-      </ResponsiveContainer>
     </div>
   );
 };

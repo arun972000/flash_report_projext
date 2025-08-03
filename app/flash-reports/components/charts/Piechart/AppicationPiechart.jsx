@@ -82,7 +82,7 @@ const ApplicationChart = ({ segmentName, segmentType = 'app' }) => {
           <select
             value={month}
             onChange={e => setMonth(e.target.value)}
-            style={{ padding: '4px 8px', fontSize: 14 }}
+            style={{ padding: '4px 8px', fontSize: 14, color:'black' }}
           >
             {availableMonths.map(m => (
               <option key={m} value={m}>{m.toUpperCase()}</option>

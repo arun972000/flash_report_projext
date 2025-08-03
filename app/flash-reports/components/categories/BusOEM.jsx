@@ -10,6 +10,7 @@ const BusForecast = dynamic(() => import("../Forecast-chart/Bus"), { ssr: false 
 import './category.css'
 import TwoWheelerApp from '../charts/Piechart/AppicationPiechart'
 import LineChartWithTotal from '../charts/NewTestLineChart'
+import CVSegmentChart from "../charts/Barchart/DynamicStackbar";
 
 async function transformOverallChartData() {
   const token = "your-very-strong-random-string-here";
@@ -45,6 +46,17 @@ async function transformOverallChartData() {
   // Step 2: Collect all children of 'overall' (these are years like 2024, 2025)
   const yearNodes = hierarchyData.filter((n) => n.parent_id === overall.id);
 
+  // Step 3: Build set of 10 target months
+  const now = new Date();
+  const currentMonthRef = new Date(now.getFullYear(), now.getMonth() - 1); // 1 month before now
+
+  const targetMonthsSet = new Set();
+  for (let offset = -3; offset <= 6; offset++) {
+    const d = new Date(currentMonthRef.getFullYear(), currentMonthRef.getMonth() + offset);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    targetMonthsSet.add(key);
+  }
+
   const result = [];
 
   for (const yearNode of yearNodes) {
@@ -52,16 +64,19 @@ async function transformOverallChartData() {
     const monthNodes = hierarchyData.filter((n) => n.parent_id === yearNode.id);
 
     for (const monthNode of monthNodes) {
+      const monthIndex = monthsList.indexOf(monthNode.name.toLowerCase());
+      if (monthIndex === -1) continue;
+
+      const formattedMonth = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
+      if (!targetMonthsSet.has(formattedMonth)) continue;
+
       const streamPath = [mainRoot.id, flashReports.id, overall.id, yearNode.id, monthNode.id].join(",");
 
       const matchedEntry = volumeData.find((v) => v.stream === streamPath);
       if (!matchedEntry || !matchedEntry.data) continue;
 
-      const entry = {
-        month: `${year}-${String(monthsList.indexOf(monthNode.name.toLowerCase()) + 1).padStart(2, '0')}`,
-      };
+      const entry = { month: formattedMonth };
 
-      // Map volume values
       for (const [key, value] of Object.entries(matchedEntry.data)) {
         let mappedKey = key.toLowerCase().trim();
         if (mappedKey === "two wheeler") mappedKey = "2-wheeler";
@@ -69,7 +84,6 @@ async function transformOverallChartData() {
         entry[mappedKey] = value;
       }
 
-      // Calculate total
       const vehicleKeys = [
         "2-wheeler",
         "3-wheeler",
@@ -85,17 +99,17 @@ async function transformOverallChartData() {
     }
   }
 
-  // Optional: Sort by month ascending
+  // Optional: sort by month ascending
   result.sort((a, b) => new Date(a.month) - new Date(b.month));
 
   return result;
-
 }
 
 const monthsList = [
   "jan", "feb", "mar", "apr", "may", "jun",
   "jul", "aug", "sep", "oct", "nov", "dec"
 ];
+
 
 
 async function fetchBusData() {
@@ -395,7 +409,8 @@ const mergedData = await transformOverallChartData();
                     </div>
 
                     <div className='col-12 mt-3'>
-                        <BusOEMChart />
+                        {/* <BusOEMChart /> */}
+                        <CVSegmentChart segmentName="bus" />
                     </div>
 
                     {/* <div className="col-12 mt-5">
