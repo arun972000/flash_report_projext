@@ -13,9 +13,7 @@ const ForecastTable = () => {
   );
 
   const data = {
-    LCV: [54321, 67890, 71234, 65432, 69876, 74321, 78900],
-    MCV: [43210, 56789, 60123, 58900, 62000, 65500, 69000],
-    HCV: [32100, 45678, 48000, 49500, 51000, 53000, 55000],
+    'Total Sales': [4257, 4022, 5015, 5856, 5122, 4568, 5950]
   };
 
   return (
@@ -23,7 +21,7 @@ const ForecastTable = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <h3 style={{ marginBottom: 8 }}>Tipper Sales Performance</h3>
         <div style={{
-          fontSize: '14px',
+          fontSize: '18px',
           fontWeight: 'bold',
           color: '#ccc',
           paddingRight: '5px'
@@ -55,22 +53,6 @@ const ForecastTable = () => {
           ))}
         </tbody>
       </table>
-
-      {/* Horizontal Legend */}
-      <div style={{
-        marginTop: 20,
-        display: 'flex',
-        justifyContent: 'space-around',
-        gap: '20px',
-        fontSize: '13px',
-        flexWrap: 'wrap',
-        lineHeight: '1.6',
-        color: '#ddd'
-      }}>
-        <div><strong>LCV</strong>: Light Commercial Vehicle <span style={{ color: '#aaa' }}>(2–7.5 Ton GVW)</span></div>
-        <div><strong>MCV</strong>: Medium Commercial Vehicle <span style={{ color: '#aaa' }}>({'>'} 7.5 Ton GVW)</span></div>
-        <div><strong>HCV</strong>: Heavy Commercial Vehicle <span style={{ color: '#aaa' }}>({'>'} 7.5 Ton GVW)</span></div>
-      </div>
     </div>
   );
 };

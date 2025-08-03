@@ -441,7 +441,7 @@ const TruckOEM = async () => {
                         </h2>
                         <TwoWheelerApp segmentName='truck' />
                     </div>
-                    {/* <TipperTable/> */}
+                    <TipperTable/>
                 </div>
             </div>
         </div>
