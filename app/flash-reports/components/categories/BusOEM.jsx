@@ -9,7 +9,7 @@ const BusEV = dynamic(() => import("../ev/Bus-EV"), { ssr: false });
 const BusForecast = dynamic(() => import("../Forecast-chart/Bus"), { ssr: false });
 import './category.css'
 import TwoWheelerApp from '../charts/Piechart/AppicationPiechart'
-import LineChartWithTotal from '../charts/NewTestLineChart'
+import LineChartWithTotal from '../charts/NewTestLineChartv2'
 import CVSegmentChart from "../charts/Barchart/DynamicStackbar";
 
 async function transformOverallChartData() {

@@ -6,7 +6,7 @@ import React from 'react';
 import FourWheelerChart from '../charts/Piechart/PieChart'
 import PassengerVehicleApp from '../charts/Piechart/AppicationPiechart'
 import PassengerVehicle_Piechart from '../dynamic-charts/OEM_Charts/PassengerVehiclePieChart'
-import LineChartWithTotal from '../charts/NewTestLineChart'
+import LineChartWithTotal from '../charts/NewTestLineChartv2'
 // import FourAwheelerDummy from '../ev/DummyFourwheeler'
 
 // const PassengerVehicle_Piechart = dynamic(

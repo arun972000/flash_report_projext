@@ -9,7 +9,7 @@ import TruckOEMBarChart from '../charts/DummyStackBarTruck'
 import Truck_PieChart from '../dynamic-charts/OEM_Charts/TruckPieChart'
 import TwoWheelerApp from '../charts/Piechart/AppicationPiechart'
 import './category.css'
-import LineChartWithTotal from '../charts/NewTestLineChart'
+import LineChartWithTotal from '../charts/NewTestLineChartv2'
 import CVSegmentChart from "../charts/Barchart/DynamicStackbar";
 import TipperTable from '../charts/TipperTable'
 

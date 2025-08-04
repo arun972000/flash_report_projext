@@ -1,7 +1,7 @@
 import dynamic from "next/dynamic";
 import TractorApplication from "../DummyAppSplit/Tractor";
 import Tractor_EV from '../ev/Tractor_ev'
-import LineChartWithTotal from '../charts/NewTestLineChart'
+import LineChartWithTotal from '../charts/NewTestLineChartv2'
 import TractorChart from '../charts/Piechart/PieChart'
 import TractorApp from '../charts/Piechart/AppicationPiechart'
 

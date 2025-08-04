@@ -3,7 +3,7 @@ import dynamic from "next/dynamic";
 
 import ThreeWheelerChart from '../charts/Piechart/PieChart'
 import ThreeWheelerApp from '../charts/Piechart/AppicationPiechart'
-import LineChartWithTotal from '../charts/NewTestLineChart'
+import LineChartWithTotal from '../charts/NewTestLineChartv2'
 // const ThreeWheeler_Piechart = dynamic(
 //     () => import("../charts/ThreeWheeler-PieChart"),
 //     { ssr: false }

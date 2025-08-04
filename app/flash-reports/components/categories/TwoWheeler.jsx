@@ -7,7 +7,7 @@ import React from 'react';
 import TwoWheelerChart from '../charts/Piechart/PieChart'
 import TwoWheelerApp from '../charts/Piechart/AppicationPiechart'
 import TwoWheelerForecastChart from '../charts/LineChart/ForecastChart'
-import LineChartWithTotal from '../charts/NewTestLineChart'
+import LineChartWithTotal from '../charts/NewTestLineChartv2'
 // import CustomPieChart from "../charts/PieChart";
 // const TwoWheelerEV = dynamic(() => import("../ev/TwoWheeler-EV"), { ssr: false });
 const TwoWheelerForecast = dynamic(() => import("../Forecast-chart/Twowheeler"), { ssr: false });

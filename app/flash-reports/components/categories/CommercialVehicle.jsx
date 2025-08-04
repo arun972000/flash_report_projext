@@ -13,7 +13,7 @@ import CommercialVehicleBarChart from '../charts/Barchart/stackBarChart'
 import Image from 'next/image'
 
 import CVPieChart from '../dynamic-charts/OEM_Charts/CM-PieChart'
-import LineChartWithTotal from '../charts/NewTestLineChart'
+import LineChartWithTotal from '../charts/NewTestLineChartv2'
 import CVSegmentChart from '../charts/Barchart/DynamicStackbar'
 
 

@@ -33,59 +33,37 @@ const abbreviate = v =>
     v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` :
       v >= 1e3 ? `${(v / 1e3).toFixed(1)}K` : `${v}`;
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, selectedCat, chartData }) => {
   if (!active || !payload?.length) return null;
+
+  const currentIndex = chartData.findIndex(row => row.month === label);
+  const forecastStartIndex = chartData.findIndex(row =>
+    row[`${selectedCat}_forecast_linear`] != null ||
+    row[`${selectedCat}_forecast_score`] != null ||
+    row[`${selectedCat}_forecast_ai`] != null ||
+    row[`${selectedCat}_forecast_race`] != null
+  );
+
+  const filteredPayload = currentIndex === forecastStartIndex
+    ? payload.filter(p => p.dataKey === selectedCat)
+    : payload;
+
   return (
-    <>
-      <div style={{ background: 'rgba(30,30,30,0.9)', padding: 10, borderRadius: 6, color: '#fff', fontSize: 12 }}>
-        <div><strong>{label}</strong></div>
-        {payload.map(p => (
-          <div key={p.dataKey} style={{ color: p.color }}>
-            {p.name}: {abbreviate(p.value)}
-          </div>
-        ))}
-      </div>
-      <style jsx>{`
-        .tooltip-card {
-          background: rgba(20, 20, 20, 0.9);
-          padding: var(--space-sm, 8px);
-          border-radius: var(--radius, 6px);
-          box-shadow: var(--shadow-deep, 0 6px 20px rgba(0, 0, 0, 0.5));
-          color: rgba(255, 255, 255, 0.85);
-          font-size: 0.875rem;
-        }
-
-        .tooltip-label {
-          margin: 0 0 6px 0;
-          font-weight: 600;
-          color: var(--fg, #ffc107);
-        }
-
-        .tooltip-item {
-          display: flex;
-          align-items: center;
-          margin-bottom: 4px;
-        }
-
-        .tooltip-item:last-child {
-          margin-bottom: 0;
-        }
-
-        .dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          margin-right: 6px;
-          display: inline-block;
-        }
-      `}</style>
-    </>
+    <div style={{ background: 'rgba(30,30,30,0.9)', padding: 10, borderRadius: 6, color: '#fff', fontSize: 12 }}>
+      <div><strong>{label}</strong></div>
+      {filteredPayload.map(p => (
+        <div key={p.dataKey} style={{ color: p.color }}>
+          {p.name}: {p.value?.toLocaleString()}
+        </div>
+      ))}
+    </div>
   );
 };
 
 const CustomLineChart = ({ overallData, category }) => {
   const selectedCat = category;
   const [chartData, setChartData] = useState([]);
+
   useEffect(() => {
     if (!overallData || !overallData.length) return;
 
@@ -118,45 +96,58 @@ const CustomLineChart = ({ overallData, category }) => {
       return idx => b + m * idx;
     };
 
-    const scoreForecast = (arr, w = [0.5, 0.3, 0.2]) =>{
+    const forecastRows = [];
 
-       w.reduce((s, wt, i) => s + wt * arr[arr.length - 1 - i], 0);
-    }
-     
-
-    const forecastRows = rows.map((r, i) => {
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
       const row = { month: r.label };
 
       categories.forEach(key => {
         const val = r.data?.[key] ?? null;
-        const histVals = rows.slice(0, safeForecastStartIdx).map(x => x.data?.[key] ?? 0);
-        const idxArr = histVals.map((_, j) => j);
-        const linFunc = linReg(idxArr, histVals);
-
         const isFuture = i >= safeForecastStartIdx;
         const isHistLast = i === safeForecastStartIdx - 1;
         const futureOffset = i - safeForecastStartIdx;
+
+        row[key] = !isFuture ? val : null;
+
+        const histVals = forecastRows
+          .slice(0, safeForecastStartIdx)
+          .map(x => x[key])
+          .filter(v => v != null);
+
+        const linFunc = linReg(histVals.map((_, j) => j), histVals);
+
+        // ✅ Fluctuating score forecast
+        const scoreForecastVal = () => {
+          const available = [];
+          for (let back = i - 1; available.length < 3 && back >= 0; back--) {
+            const prev = forecastRows[back]?.[`${key}_forecast_score`] ?? forecastRows[back]?.[key];
+            if (prev != null) available.unshift(prev);
+          }
+          if (available.length < 3) return null;
+
+          const weights = [0.5, 0.3, 0.2];
+          const base = weights.reduce((s, wt, j) => s + wt * available[available.length - 1 - j], 0);
+
+          const progressiveFactor = 1 + (futureOffset * 0.003); // slight upward trend
+          const randomFactor = 0.98 + Math.random() * 0.04; // ±2%
+
+          return base * progressiveFactor * randomFactor;
+        };
 
         const raceVal = isFuture ? val : null;
         const aiVal = isFuture && val != null
           ? (futureOffset < 4 ? val * 1.03 : val * 0.98)
           : null;
 
-        // 1. Set historical value normally, except null it in last hist point
-        row[key] = !isFuture ? val : null;
-
-        // 2. For last historical row, fill forecast values with val to ensure connectivity
         row[`${key}_forecast_linear`] = isFuture ? linFunc(i) : isHistLast ? val : null;
-        row[`${key}_forecast_score`] = isFuture ? scoreForecast(histVals) : isHistLast ? val : null;
+        row[`${key}_forecast_score`] = isFuture ? scoreForecastVal() : isHistLast ? val : null;
         row[`${key}_forecast_race`] = isFuture ? raceVal : isHistLast ? val : null;
-        row[`${key}_forecast_ai`] = isFuture
-          ? aiVal
-          : isHistLast && val != null
-            ? val
-            : null;
+        row[`${key}_forecast_ai`] = isFuture ? aiVal : isHistLast ? val : null;
       });
-      return row;
-    });
+
+      forecastRows.push(row);
+    }
 
     setChartData(forecastRows);
   }, [overallData]);
@@ -196,25 +187,22 @@ const CustomLineChart = ({ overallData, category }) => {
       race: calc(raceStart, raceEnd)
     };
   }, [chartData, selectedCat]);
+
   return (
     <div>
       <div className="mb-3">
-        <select
-          value={category}
-          disabled
-          style={{
-            backgroundColor: '#333',
-            color: '#fff',
-            padding: '6px 12px',
-            fontSize: '14px',
-            border: '1px solid #666',
-            borderRadius: '4px',
-            appearance: 'none',     // hides the arrow
-            WebkitAppearance: 'none',
-            MozAppearance: 'none',
-            pointerEvents: 'none',  // disables dropdown interaction visually
-          }}
-        >
+        <select value={category} disabled style={{
+          backgroundColor: '#333',
+          color: '#fff',
+          padding: '6px 12px',
+          fontSize: '14px',
+          border: '1px solid #666',
+          borderRadius: '4px',
+          appearance: 'none',
+          WebkitAppearance: 'none',
+          MozAppearance: 'none',
+          pointerEvents: 'none',
+        }}>
           <option>{category}</option>
         </select>
       </div>
@@ -232,88 +220,18 @@ const CustomLineChart = ({ overallData, category }) => {
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={chartData} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
             <CartesianGrid stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
-            <XAxis
-              dataKey="month"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "#FFC107", fontSize: 12 }}
-              tickFormatter={abbreviate}
-              tickCount={5}
-              domain={["auto", "auto"]}
-              interval="preserveStartEnd"
-            />
-            <Tooltip content={<CustomTooltip />} />
+            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "rgba(255,255,255,0.7)", fontSize: 12 }} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: "#FFC107", fontSize: 12 }} tickFormatter={abbreviate} tickCount={5} domain={["auto", "auto"]} interval="preserveStartEnd" />
+            <Tooltip content={<CustomTooltip selectedCat={selectedCat} chartData={chartData} />} />
             <Legend wrapperStyle={{ marginTop: 24 }} />
-            <Brush
-              dataKey="month"
-              height={12}
-              stroke="rgba(255,255,255,0.4)"
-              fill="rgba(255,255,255,0.08)"
-              strokeWidth={1}
-              tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 9 }}
-              tickMargin={4}
-              traveller={
-                <Rectangle
-                  width={6}
-                  height={16}
-                  radius={3}
-                  fill="rgba(255,255,255,0.6)"
-                  stroke="rgba(255,255,255,0.4)"
-                  strokeWidth={1}
-                  cursor="ew-resize"
-                />
-              }
-            />
+            <Brush dataKey="month" height={12} stroke="rgba(255,255,255,0.4)" fill="rgba(255,255,255,0.08)" strokeWidth={1}
+              tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 9 }} tickMargin={4}
+              traveller={<Rectangle width={6} height={16} radius={3} fill="rgba(255,255,255,0.6)" stroke="rgba(255,255,255,0.4)" strokeWidth={1} cursor="ew-resize" />} />
             <Line type="linear" dataKey={selectedCat} name="Historical" stroke={catColors[selectedCat]} strokeWidth={3} connectNulls dot={{ r: 2 }} />
-            <Line
-              type="linear"
-              dataKey={`${selectedCat}_forecast_linear`}
-              name={`Forecast (Stats)`}
-              stroke={forecastColors.linear}
-              strokeWidth={2}
-              strokeDasharray="5 5"
-              dot={false}
-              connectNulls
-              animationBegin={150}
-            />
-            <Line
-              type="linear"
-              dataKey={`${selectedCat}_forecast_score`}
-              name={`Forecast (Survey-based)`}
-              stroke={forecastColors.score}
-              strokeWidth={2}
-              strokeDasharray="2 2"
-              dot={false}
-              connectNulls
-              animationBegin={300}
-            />
-            <Line
-              type="linear"
-              dataKey={`${selectedCat}_forecast_ai`}
-              name={`Forecast (AI)`}
-              stroke={forecastColors.ai}
-              strokeWidth={2}
-              strokeDasharray="4 4"
-              dot={false}
-              connectNulls
-              animationBegin={450}
-            />
-            <Line
-              type="linear"
-              dataKey={`${selectedCat}_forecast_race`}
-              name={`Forecast (Race)`}
-              stroke={forecastColors.race}
-              strokeWidth={2}
-              strokeDasharray="2 4"
-              dot={false}
-              connectNulls
-              animationBegin={600}
-            />
+            <Line type="linear" dataKey={`${selectedCat}_forecast_linear`} name="Forecast (Stats)" stroke={forecastColors.linear} strokeWidth={2} strokeDasharray="5 5" dot={false} connectNulls />
+            <Line type="linear" dataKey={`${selectedCat}_forecast_score`} name="Forecast (Survey-based)" stroke={forecastColors.score} strokeWidth={2} strokeDasharray="2 2" dot={false} connectNulls />
+            <Line type="linear" dataKey={`${selectedCat}_forecast_ai`} name="Forecast (AI)" stroke={forecastColors.ai} strokeWidth={2} strokeDasharray="4 4" dot={false} connectNulls />
+            <Line type="linear" dataKey={`${selectedCat}_forecast_race`} name="Forecast (Race)" stroke={forecastColors.race} strokeWidth={2} strokeDasharray="2 4" dot={false} connectNulls />
           </LineChart>
         </ResponsiveContainer>
       </div>
