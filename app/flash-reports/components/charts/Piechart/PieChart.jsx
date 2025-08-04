@@ -109,7 +109,7 @@ const TwoWheelerChart = ({ segmentName, segmentType }) => {
   const [mode, setMode] = useState("mom");
   const [selectedMonth, setSelectedMonth] = useState(monthsList[effectiveCurrentMonthIndex]);
   const [sortedLegend, setSortedLegend] = useState([]);
-console.log(segmentName)
+
   const fetchData = async () => {
     try {
       const res = await fetch(`/api/fetchMarketData?segmentName=${segmentName}&selectedMonth=${selectedMonth}&mode=${mode}&segmentType=${segmentType}`);

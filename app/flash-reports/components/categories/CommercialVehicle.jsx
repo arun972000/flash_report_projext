@@ -175,74 +175,74 @@ async function fetchCommercialVehicleData() {
 
 
 async function fetchCommercialMarketShareData() {
-    const token = "your-very-strong-random-string-here";
+  const token = "your-very-strong-random-string-here";
 
-    const [hierarchyRes, volumeRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/contentHierarchy`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-            },
-        }),
-        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/volumeData`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-            },
-        }),
-    ]);
+  const [hierarchyRes, volumeRes] = await Promise.all([
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/contentHierarchy`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }),
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/volumeData`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }),
+  ]);
 
-    const hirarchydata = await hierarchyRes.json();
-    const volumedata = await volumeRes.json();
+  const hirarchydata = await hierarchyRes.json();
+  const volumedata = await volumeRes.json();
 
-    // Helper: build stream path from node id
-    const buildPath = (id) => {
-        const path = [];
-        let current = hirarchydata.find((n) => n.id === id);
-        while (current) {
-            path.unshift(current.id);
-            current = hirarchydata.find((n) => n.id === current.parent_id);
-        }
-        return path.join(",");
-    };
-
-    // Step 1: Find 'Two Wheeler' node
-    const twoWheelerNode = hirarchydata.find(
-        (n) => n.name.toLowerCase() === "commercial vehicle"
-    );
-    if (!twoWheelerNode) return [];
-
-    // Step 2: Under 'Two Wheeler', find 'Market Share'
-    const marketShareNode = hirarchydata.find(
-        (n) =>
-            n.name.toLowerCase() === "market share" &&
-            n.parent_id === twoWheelerNode.id
-    );
-    if (!marketShareNode) return [];
-
-    // Step 3: Find month nodes under 'Market Share'
-    const monthNodes = hirarchydata
-        .filter((n) => n.parent_id === marketShareNode.id)
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(-2); // Last 2 months
-
-    // Step 4: Merge data by company name
-    const merged = {};
-
-    for (const month of monthNodes) {
-        const stream = buildPath(month.id);
-        const volumeEntry = volumedata.find((v) => v.stream === stream);
-        if (!volumeEntry) continue;
-
-        const label = month.name;
-
-        for (const [name, value] of Object.entries(volumeEntry.data.data)) {
-            if (!merged[name]) merged[name] = { name };
-            merged[name][label] = value;
-        }
+  // Helper: build stream path from node id
+  const buildPath = (id) => {
+    const path = [];
+    let current = hirarchydata.find((n) => n.id === id);
+    while (current) {
+      path.unshift(current.id);
+      current = hirarchydata.find((n) => n.id === current.parent_id);
     }
+    return path.join(",");
+  };
 
-    return Object.values(merged);
+  // Step 1: Find 'Two Wheeler' node
+  const twoWheelerNode = hirarchydata.find(
+    (n) => n.name.toLowerCase() === "commercial vehicle"
+  );
+  if (!twoWheelerNode) return [];
+
+  // Step 2: Under 'Two Wheeler', find 'Market Share'
+  const marketShareNode = hirarchydata.find(
+    (n) =>
+      n.name.toLowerCase() === "market share" &&
+      n.parent_id === twoWheelerNode.id
+  );
+  if (!marketShareNode) return [];
+
+  // Step 3: Find month nodes under 'Market Share'
+  const monthNodes = hirarchydata
+    .filter((n) => n.parent_id === marketShareNode.id)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(-2); // Last 2 months
+
+  // Step 4: Merge data by company name
+  const merged = {};
+
+  for (const month of monthNodes) {
+    const stream = buildPath(month.id);
+    const volumeEntry = volumedata.find((v) => v.stream === stream);
+    if (!volumeEntry) continue;
+
+    const label = month.name;
+
+    for (const [name, value] of Object.entries(volumeEntry.data.data)) {
+      if (!merged[name]) merged[name] = { name };
+      merged[name][label] = value;
+    }
+  }
+
+  return Object.values(merged);
 }
 
 
@@ -310,94 +310,97 @@ async function fetchCVBarChartData() {
 
 
 const CommercialVehicle = async () => {
-    const commercialTextRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`, { cache: 'no-store' })
-    const commercialText = await commercialTextRes.json();
+  const commercialTextRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}api/admin/flash-dynamic/flash-reports-text`, { cache: 'no-store' })
+  const commercialText = await commercialTextRes.json();
 
-    const mergedData = await transformOverallChartData();
-    const mergedDataCV = await fetchCVBarChartData();
+  const mergedData = await transformOverallChartData();
+  const mergedDataCV = await fetchCVBarChartData();
 
-    return (
-        <>
-            <div className='px-lg-4'>
-                <div className='container-fluid'>
-                    <div className="row">
-                        <div className='col-12 mt-4'>
-                            <h3>{commercialText.commercial_heading || 'Commercial Vehicle OEM Performance'}</h3>
-                            <div
-                                className='category_content'
-                                style={{ textAlign: 'justify' }}
-                                dangerouslySetInnerHTML={{ __html: commercialText.commercial_vehicle || '<p>content is loading...</p>' }}
-                            />
-                        </div>
-
-                        <div className='col-12 mt-3'>
-                        <CommercialVehicleChart segmentName="commercial vehicle" segmentType='market share' />
-                    </div>
-
-                        {/* <div className='col-12 mt-3'>
-
-                            <CVPieChart/>
-                        </div> */}
-
-                        <div className='col-12 mt-5'>
-                            <h3>Commercial Vehicles Segmental Split</h3>
-                            {/* <CustomStackBarChart /> */}
-                            {/* <CommercialVehicleBarChart data={mergedDataCV}/> */}
-                            {/* <StaticCommercialSegmentChart /> */}
-                            <CVSegmentChart segmentName="commercial vehicle" />
-                        </div>
-
-                        <div className='col-12'>
-                            <h3 className="mt-4">Forecast Chart</h3>
-                            {/* <CommercialVehicleReport /> */}
-                            <LineChartWithTotal overallData={mergedData} category='CV'/>
-                        </div>
-
-                        <div className="container mt-5">
-                            <h2 className="text-center mb-4" style={{ fontWeight: '700' }}>
-                                Application Segments
-                            </h2>
-                            {/* <div className='col-12 mt-3'>
+  return (
+    <>
+      <div className='px-lg-4'>
+        <div className='container-fluid'>
+          <div className="row">
+            <div className='col-12 mt-4'>
+              <h3>{commercialText.commercial_heading || 'Commercial Vehicle OEM Performance'}</h3>
+              <div
+                className='category_content'
+                style={{ textAlign: 'justify' }}
+                dangerouslySetInnerHTML={{ __html: commercialText.commercial_vehicle || '<p>content is loading...</p>' }}
+              />
+            </div>
+            <div className="container my-2">
+              <h2 className="text-center mb-4" style={{ fontWeight: '700' }}>
+                Application Segments
+              </h2>
+              {/* <div className='col-12 mt-3'>
                                 <Link href='https://raceautoindia.com/subscription'><div style={{ width: '100%', position: 'relative', aspectRatio: '4.18/1', border: '1px solid white' }}>
                                     <Image src="/images/fr-table.jpg" alt='flash-report-table' fill />
                                 </div></Link>
                             </div> */}
-                            <div className="d-flex justify-content-center gap-5 flex-wrap">
-                               <Link
-                                    href="/flash-reports/bus"
-                                    className="text-decoration-none text-dark text-center segment-card"
-                                >
-                                    <div className="icon-circle bg-primary text-white">
-                                        <img
-                                            src="/images/bus 2.png"   // adjust path if needed
-                                            alt="Bus"
-                                            style={{ width: 50, height: 50, objectFit: 'contain' }}
-                                        />
-                                    </div>
-                                    <div className="mt-2 fw-semibold fs-5" style={{ color: 'white' }}>Bus</div>
-                                </Link>
+              <div className="d-flex justify-content-center gap-5 flex-wrap">
+                <Link
+                  href="/flash-reports/bus"
+                  className="text-decoration-none text-dark text-center segment-card"
+                >
+                  <div className="icon-circle bg-primary text-white">
+                    <img
+                      src="/images/bus 2.png"   // adjust path if needed
+                      alt="Bus"
+                      style={{ width: 50, height: 50, objectFit: 'contain' }}
+                    />
+                  </div>
+                  <div className="mt-2 fw-semibold fs-5" style={{ color: 'white' }}>Bus</div>
+                  
+                </Link>
 
-                              
-                                <Link
-                                    href="/flash-reports/truck"
-                                    className="text-decoration-none text-dark text-center segment-card"
-                                >
-                                    <div className="icon-circle bg-success text-white">
-                                        <img
-                                            src="/images/truck.png"  // adjust path if needed
-                                            alt="Truck"
-                                            style={{ width: 50, height: 50, objectFit: 'contain' }}
-                                        />
-                                    </div>
-                                    <div className="mt-2 fw-semibold fs-5" style={{ color: 'white' }}>Truck</div>
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
+                <Link
+                  href="/flash-reports/truck"
+                  className="text-decoration-none text-dark text-center segment-card"
+                >
+                  <div className="icon-circle bg-success text-white">
+                    <img
+                      src="/images/truck.png"  // adjust path if needed
+                      alt="Truck"
+                      style={{ width: 50, height: 50, objectFit: 'contain' }}
+                    />
+                  </div>
+                  <div className="mt-2 fw-semibold fs-5" style={{ color: 'white' }}>Truck</div>
+                </Link>
+                
+              </div>
+              <p className='text-center m-0 p-0 mt-2' style={{fontSize:'0.8rem'}}><i>Click here for truck and bus sales performance with segmental/application split</i></p>
             </div>
-        </>
-    )
+            <div className='col-12 mt-3'>
+              <CommercialVehicleChart segmentName="commercial vehicle" segmentType='market share' />
+            </div>
+
+            {/* <div className='col-12 mt-3'>
+
+                            <CVPieChart/>
+                        </div> */}
+
+            <div className='col-12 mt-5'>
+              <h3>Commercial Vehicles Segmental Split</h3>
+              {/* <CustomStackBarChart /> */}
+              {/* <CommercialVehicleBarChart data={mergedDataCV}/> */}
+              {/* <StaticCommercialSegmentChart /> */}
+              <CVSegmentChart segmentName="commercial vehicle" />
+            </div>
+
+            <div className='col-12'>
+              <h3 className="mt-4">Forecast Chart</h3>
+              {/* <CommercialVehicleReport /> */}
+              <LineChartWithTotal overallData={mergedData} category='CV' />
+            </div>
+
+
+          </div>
+        </div>
+      </div>
+    </>
+  )
 }
 
 export default CommercialVehicle

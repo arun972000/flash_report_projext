@@ -356,7 +356,6 @@ export default function ForecastPage() {
 
   // ─── Combine historical + linear forecast ─────────────────────────────────
   const combinedData = useMemo(() => {
-    console.log("chartdata ", chartData);
     // console.log("selectedgraphid " , selectedGraphId);
     // console.log("forecastdatalr ", forecastDataLR);
     // console.log("historicalvolumes ", historicalVolumes);

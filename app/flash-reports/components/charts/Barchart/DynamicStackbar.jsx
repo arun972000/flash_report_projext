@@ -130,7 +130,7 @@ const CVSegmentChart = ({ segmentName }) => {
                   borderRadius: 3,
                 }}
               />
-              <span style={{ color: '#333' }}>{LEGEND_TITLES[key]}</span>
+              <span style={{ color: '' }}>{LEGEND_TITLES[key]}</span>
             </div>
           ))}
         </div>
