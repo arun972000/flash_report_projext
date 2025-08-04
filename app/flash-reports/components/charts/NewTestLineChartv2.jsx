@@ -96,6 +96,7 @@ const CustomLineChart = ({ overallData, category }) => {
       return idx => b + m * idx;
     };
 
+    const round = v => v != null ? Math.round(v) : null;
     const forecastRows = [];
 
     for (let i = 0; i < rows.length; i++) {
@@ -117,7 +118,6 @@ const CustomLineChart = ({ overallData, category }) => {
 
         const linFunc = linReg(histVals.map((_, j) => j), histVals);
 
-        // ✅ Fluctuating score forecast
         const scoreForecastVal = () => {
           const available = [];
           for (let back = i - 1; available.length < 3 && back >= 0; back--) {
@@ -128,9 +128,8 @@ const CustomLineChart = ({ overallData, category }) => {
 
           const weights = [0.5, 0.3, 0.2];
           const base = weights.reduce((s, wt, j) => s + wt * available[available.length - 1 - j], 0);
-
-          const progressiveFactor = 1 + (futureOffset * 0.003); // slight upward trend
-          const randomFactor = 0.98 + Math.random() * 0.04; // ±2%
+          const progressiveFactor = 1 + (futureOffset * 0.003);
+          const randomFactor = 0.98 + Math.random() * 0.04;
 
           return base * progressiveFactor * randomFactor;
         };
@@ -140,10 +139,10 @@ const CustomLineChart = ({ overallData, category }) => {
           ? (futureOffset < 4 ? val * 1.03 : val * 0.98)
           : null;
 
-        row[`${key}_forecast_linear`] = isFuture ? linFunc(i) : isHistLast ? val : null;
-        row[`${key}_forecast_score`] = isFuture ? scoreForecastVal() : isHistLast ? val : null;
-        row[`${key}_forecast_race`] = isFuture ? raceVal : isHistLast ? val : null;
-        row[`${key}_forecast_ai`] = isFuture ? aiVal : isHistLast ? val : null;
+        row[`${key}_forecast_linear`] = isFuture ? round(linFunc(i)) : isHistLast ? round(val) : null;
+        row[`${key}_forecast_score`] = isFuture ? round(scoreForecastVal()) : isHistLast ? round(val) : null;
+        row[`${key}_forecast_race`] = isFuture ? round(raceVal) : isHistLast ? round(val) : null;
+        row[`${key}_forecast_ai`] = isFuture ? round(aiVal) : isHistLast ? round(val) : null;
       });
 
       forecastRows.push(row);
