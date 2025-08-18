@@ -29,7 +29,9 @@ function Banner() {
             <h5>Buses & Coaches</h5>
             <h5>Trucks</h5>
             <h5>And more...</h5>
-            <Link href='/forecast' style={{textDecoration:'none'}}><h2 style={{ color: "#21F2D7"  }}>To Forecast</h2></Link>
+            <Link href="/forecast" style={{ textDecoration: "none" }}>
+              <h2 style={{ color: "#21F2D7" }}>To Forecast</h2>
+            </Link>
           </div>
         </div>
         <h1 className="text-white  mt-auto">
@@ -62,7 +64,16 @@ function Banner() {
             <h5>Buses & Coaches</h5>
             <h5>Trucks</h5>
             <h5>And more...</h5>
-           <Link href='/forecast' style={{textDecoration:'none'}}><h2 style={{ color: "#21F2D7", textDecoration:'none' }}>To Forecast</h2></Link>
+            <Link href="/forecast" style={{ textDecoration: "none" }}>
+              <h2 style={{ color: "#21F2D7", textDecoration: "none" }}>
+                Forecast
+              </h2>
+            </Link>
+            <Link href="/flash-reports" style={{ textDecoration: "none" }}>
+              <h2 style={{ color: "#21F2D7", textDecoration: "none" }}>
+                Flash Report
+              </h2>
+            </Link>
           </div>
         </div>
       </div>
@@ -91,7 +102,16 @@ function Banner() {
             <h5>Buses & Coaches</h5>
             <h5>Trucks</h5>
             <h5>And more...</h5>
-            <Link href='/forecast' style={{textDecoration:'none'}}><h2 style={{ color: "#21F2D7", textDecoration:'none' }}>To Forecast</h2></Link>
+            <Link href="/forecast" style={{ textDecoration: "none" }}>
+              <h2 style={{ color: "#21F2D7", textDecoration: "none" }}>
+                Forecast
+              </h2>
+            </Link>
+            <Link href="/flash-reports" style={{ textDecoration: "none" }}>
+              <h2 style={{ color: "#21F2D7", textDecoration: "none" }}>
+                Flash Report
+              </h2>
+            </Link>
           </div>
         </div>
       </div>
