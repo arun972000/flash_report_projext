@@ -850,6 +850,7 @@ export default function ForecastPage() {
       payload = payload.filter((p) =>
         isHistorical ? p.dataKey === "value" : p.dataKey !== "value"
       );
+      console.log("payload",payload);
       if (!payload.length) return null;
     }
 

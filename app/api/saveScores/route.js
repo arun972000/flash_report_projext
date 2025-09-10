@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 export async function GET(request) {
   const url = new URL(request.url);
   const graphId = url.searchParams.get("graphId");
-  const email   = url.searchParams.get("email");   // ← new
+  const email = url.searchParams.get("email"); // ← new
 
   let conn;
   try {
@@ -92,7 +92,6 @@ export async function GET(request) {
   }
 }
 
-
 export async function POST(request) {
   const { user, graphId, results } = await request.json();
   if (!user || !graphId || !Array.isArray(results)) {
@@ -140,6 +139,31 @@ export async function POST(request) {
     }
 
     await conn.commit();
+
+    // 🔔 fire-and-forget trigger to recompute ML for this graph (separate API)
+    // Does NOT block the response; safe if ML is down.
+    (async () => {
+      try {
+        const base = process.env.INTERNAL_API_BASE || "http://127.0.0.1:3000"; // adjust for your deployment
+        const url = `${base}/api/ml/recompute`;
+        const ctrl = new AbortController();
+        setTimeout(() => ctrl.abort(), 15000); // 15s cap
+        await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(process.env.ML_ADMIN_TOKEN
+              ? { Authorization: `Bearer ${process.env.ML_ADMIN_TOKEN}` }
+              : {}),
+          },
+          body: JSON.stringify({ graphId, source: "user input" }),
+          signal: ctrl.signal,
+        }).catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    })();
+
     return new Response(JSON.stringify({ success: true, submissionId }), {
       status: 200,
       headers: { "Content-Type": "application/json" },

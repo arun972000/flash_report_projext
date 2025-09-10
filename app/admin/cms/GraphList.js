@@ -31,6 +31,7 @@ export default function GraphList() {
   const [raceForecastRows, setRaceForecastRows] = useState([]);
   const [description, setDescription] = useState("");
   const [summary, setSummary] = useState("");
+  const [visibleCount, setVisibleCount] = useState(0);
 
   // Fetch all three endpoints in parallel
   const loadAll = useCallback(async () => {
@@ -55,6 +56,7 @@ export default function GraphList() {
       ]);
 
       setGraphs(graphsRes);
+      setVisibleCount(graphsRes.length);
       setContentHierarchy(hierarchyRes);
 
       // Build a map of volumeData by ID
@@ -70,6 +72,57 @@ export default function GraphList() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    setVisibleCount(graphs.length);
+  }, [graphs]);
+
+  // Build lookups once
+  const nodeNameById = useMemo(() => {
+    const map = new Map();
+    (contentHierarchy || []).forEach((n) => map.set(Number(n.id), n.name));
+    return map;
+  }, [contentHierarchy]);
+
+  const parseDatasetId = (dataset_ids) => {
+    if (Array.isArray(dataset_ids)) return Number(dataset_ids[0]);
+    if (typeof dataset_ids === "number") return dataset_ids;
+    if (typeof dataset_ids === "string") {
+      try {
+        const parsed = JSON.parse(dataset_ids);
+        if (Array.isArray(parsed)) return Number(parsed[0]);
+        const num = Number(dataset_ids);
+        return Number.isFinite(num) ? num : undefined;
+      } catch {
+        const num = Number(dataset_ids);
+        return Number.isFinite(num) ? num : undefined;
+      }
+    }
+    return undefined;
+  };
+
+  const namesFromStream = (stream) => {
+    if (!stream) return [];
+    const ids = String(stream)
+      .split(",")
+      .map((s) => Number(s.trim()))
+      .filter(Boolean);
+    return ids.map((id) => nodeNameById.get(id) || String(id));
+  };
+
+  const getCategoryAndRegion = (datasetId) => {
+    const ds = volumeDataMap[Number(datasetId)];
+    if (!ds || !ds.stream) return { category: "—", region: "—" };
+    const names = namesFromStream(ds.stream);
+    const category = names[2] ?? "—"; // 3rd child
+    const region = names[names.length - 2] ?? "—"; // penultimate
+    return { category, region };
+  };
+
+  const preview = (txt, n = 120) => {
+    if (!txt) return "";
+    return txt.length > n ? `${txt.slice(0, n)}…` : txt;
+  };
 
   useEffect(() => {
     loadAll();
@@ -129,10 +182,30 @@ export default function GraphList() {
     setter((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Build a simple id→name map for contentHierarchy lookups
-  const idToName = useMemo(() => {
-    return Object.fromEntries(contentHierarchy.map((n) => [n.id, n.name]));
-  }, [contentHierarchy]);
+  // Build distinct filter options for Category and Region
+  const categoryFilters = useMemo(() => {
+    const set = new Set();
+    (graphs || []).forEach((g) => {
+      const datasetId = parseDatasetId(g.dataset_ids);
+      const { category } = getCategoryAndRegion(datasetId);
+      set.add(category || "—");
+    });
+    return Array.from(set)
+      .sort((a, b) => String(a).localeCompare(String(b)))
+      .map((v) => ({ text: v, value: v }));
+  }, [graphs, volumeDataMap, nodeNameById]);
+
+  const regionFilters = useMemo(() => {
+    const set = new Set();
+    (graphs || []).forEach((g) => {
+      const datasetId = parseDatasetId(g.dataset_ids);
+      const { region } = getCategoryAndRegion(datasetId);
+      set.add(region || "—");
+    });
+    return Array.from(set)
+      .sort((a, b) => String(a).localeCompare(String(b)))
+      .map((v) => ({ text: v, value: v }));
+  }, [graphs, volumeDataMap, nodeNameById]);
 
   // Column definitions (memoized so they don’t recreate unnecessarily)
   const columns = useMemo(
@@ -140,64 +213,58 @@ export default function GraphList() {
       { title: "ID", dataIndex: "id", width: 60 },
       { title: "Name", dataIndex: "name", ellipsis: true },
 
+      // NEW: Category (3rd node in stream)
       {
-        title: "Dataset",
-        dataIndex: "dataset_ids",
-        render: (rawIds) => {
-          // Normalize to an array if it’s a single value
-          const arr = Array.isArray(rawIds) ? rawIds : [rawIds];
-          return (
-            <Space size="small">
-              {arr.map((rawId) => {
-                if (rawId == null) {
-                  return (
-                    <Tooltip key="none" title="No dataset">
-                      <Tag>—</Tag>
-                    </Tooltip>
-                  );
-                }
-                const id = Number(rawId);
-                const entry = volumeDataMap[id];
-                const streamPath = entry?.stream
-                  ?.split(",")
-                  .map((strId) => idToName[Number(strId)])
-                  .filter(Boolean)
-                  .join(" > ");
-                return (
-                  <Tooltip key={id} title={streamPath || `#${id}`}>
-                    <Tag>#{id}</Tag>
-                  </Tooltip>
-                );
-              })}
-            </Space>
-          );
+        title: "Category",
+        key: "category",
+        filters: categoryFilters,
+        filterMultiple: true,
+        filterSearch: true,
+        onFilter: (val, row) => {
+          const datasetId = parseDatasetId(row.dataset_ids);
+          const { category } = getCategoryAndRegion(datasetId);
+          return (category || "—") === val;
+        },
+        render: (_, record) => {
+          const datasetId = parseDatasetId(record.dataset_ids);
+          return getCategoryAndRegion(datasetId).category;
         },
       },
 
+      // NEW: Region (penultimate node in stream)
       {
-        title: "Forecast Methods",
-        dataIndex: "forecast_types",
-        render: (ft) => {
-          const methods = Array.isArray(ft) ? ft : [];
-          if (methods.length === 0) {
-            return <em>N/A</em>;
-          }
-          return methods.map((m) => (
-            <Tag key={m}>
-              {m === "linear" ? "Linear Regression" : "Score-Based"}
-            </Tag>
-          ));
+        title: "Region",
+        key: "region",
+        filters: regionFilters,
+        filterMultiple: true,
+        filterSearch: true,
+        onFilter: (val, row) => {
+          const datasetId = parseDatasetId(row.dataset_ids);
+          const { region } = getCategoryAndRegion(datasetId);
+          return (region || "—") === val;
+        },
+        render: (_, record) => {
+          const datasetId = parseDatasetId(record.dataset_ids);
+          return getCategoryAndRegion(datasetId).region;
         },
       },
 
+      // Chart type unchanged (renamed title for clarity)
       {
-        title: "Chart",
+        title: "Chart Type",
         dataIndex: "chart_type",
         render: (t) =>
           typeof t === "string" ? t.charAt(0).toUpperCase() + t.slice(1) : "—",
+        filters: [
+          { text: "Line", value: "line" },
+          { text: "Bar", value: "bar" },
+          { text: "Pie", value: "pie" },
+        ],
+        onFilter: (val, row) => row.chart_type === val,
+        width: 120,
       },
-      { title: "Summary", dataIndex: "summary", ellipsis: true },
-      { title: "Description", dataIndex: "description", ellipsis: true },
+
+      // Keep your existing Forecasts column as-is
       {
         title: "Forecasts",
         key: "forecast_summary",
@@ -233,10 +300,53 @@ export default function GraphList() {
         },
       },
 
+      // NEW: Writeups (Summary + Description merged)
+      {
+        title: "Writeups",
+        key: "writeups",
+        render: (_, record) => {
+          const hasSummary = Boolean(record.summary && record.summary.trim());
+          const hasDescription = Boolean(
+            record.description && record.description.trim()
+          );
+
+          const tooltipContent = (
+            <div style={{ maxWidth: 420 }}>
+              {hasSummary && (
+                <div style={{ marginBottom: 6 }}>
+                  <strong>Summary:</strong> {preview(record.summary)}
+                </div>
+              )}
+              {hasDescription && (
+                <div>
+                  <strong>Description:</strong> {preview(record.description)}
+                </div>
+              )}
+              {!hasSummary && !hasDescription && <em>No writeups</em>}
+            </div>
+          );
+
+          return (
+            <Tooltip placement="topLeft" title={tooltipContent}>
+              <span>
+                <Tag color={hasSummary ? "processing" : undefined}>
+                  Summary {hasSummary ? "✓" : "✗"}
+                </Tag>
+                <Tag color={hasDescription ? "success" : undefined}>
+                  Description {hasDescription ? "✓" : "✗"}
+                </Tag>
+              </span>
+            </Tooltip>
+          );
+        },
+      },
+
       {
         title: "Created",
         dataIndex: "created_at",
         render: (dt) => (dt ? new Date(dt).toLocaleString() : "—"),
+        width: 170,
+        sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
       },
 
       {
@@ -263,7 +373,8 @@ export default function GraphList() {
         ),
       },
     ],
-    [volumeDataMap, idToName, handleDelete]
+    // 🔁 Dependencies: we derive Category/Region from volumeDataMap + nodeNameById
+    [volumeDataMap, nodeNameById, handleDelete, categoryFilters, regionFilters]
   );
 
   if (loading) {
@@ -426,11 +537,29 @@ export default function GraphList() {
           + Add Race Forecast
         </Button>
       </Modal>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 8,
+        }}
+      >
+        <div style={{ fontWeight: 600 }}>Total graphs: {visibleCount}</div>
+      </div>
+
       <Table
         rowKey="id"
         dataSource={graphs}
         columns={columns}
-        pagination={{ pageSize: 10 }}
+        onChange={(_, __, ___, extra) => {
+          // after filters/sort, this is the number of rows currently visible
+          setVisibleCount(extra.currentDataSource.length);
+        }}
+        pagination={{
+          pageSize: 10,
+          showTotal: (total) => `Total ${total} graphs`,
+        }}
       />
     </>
   );

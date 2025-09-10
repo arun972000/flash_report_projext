@@ -15,6 +15,8 @@ import SubmittedScores from './SubmittedScores';
 import PreviewPage from './PreviewPage';
 import UserOverallScores     from './UserOverallScores';
 import UserAuthorization from './UserAuthorization';
+import AIForecast from './AIForecast';
+import MLScoreRange from './MLScoreRange';
 
 export default function Home() {
   const historicalItems = [
@@ -30,6 +32,7 @@ export default function Home() {
     // { key: 'calculator', label: 'Score Calculator', children: <VehicleSalesScoreApp /> },
     { key: 'view',       label: 'Submitted Scores',           children: <SubmittedScores /> },
     { key: 'userScores', label: 'User & Overall Scores', children: <UserOverallScores    /> },
+    { key: 'mlScoreRange', label: 'ML — Score Range', children: <MLScoreRange /> },
   ];
 
   const forecastSubtabs = [
@@ -37,6 +40,7 @@ export default function Home() {
     { key: 'list', label: 'All Graphs', children: <GraphList /> },
     { key: 'preview', label: 'Preview Page',  children: <PreviewPage /> },
     { key: 'user', label: 'User Authorization',  children: <UserAuthorization /> },
+    { key: 'ai', label: 'AI Forecast', children: <AIForecast /> },
   ];
 
   const tabItems = [
@@ -48,7 +52,7 @@ export default function Home() {
     {
       key: 'score',
       label: 'Score Analysis',
-      children: <Tabs defaultActiveKey="settings" items={scoreSubtabs} />,
+      children: <Tabs defaultActiveKey="manage" items={scoreSubtabs} />,
     },
     {
       key: 'forecast',

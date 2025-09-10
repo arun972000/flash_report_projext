@@ -4,7 +4,8 @@ import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "./score.css";
-import { notification, Button } from "antd";
+import { notification, Button, Tag, Tooltip } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
 import Image from "next/image";
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useCurrentPlan } from "../hooks/useCurrentPlan";
@@ -278,6 +279,198 @@ export default function ScoreCard() {
       `&body=${encodeURIComponent(body)}`;
   };
 
+  // === ML guidance state ===
+  const [mlEnabled, setMlEnabled] = useState(false); // gate: >= 2 non-skipped submissions
+  const [mlLoaded, setMlLoaded] = useState(false);
+  const [rangeMap, setRangeMap] = useState({}); // { [questionId]: { [yearIndex]: {lo, hi} } }
+  const warnedRef = useRef(new Set()); // warn once per cell
+  const MIN_RANGE_WIDTH = 2; // 0..10 scale
+
+  // Label ↔ score mapping from your dropdown
+  const { labelToScore, scoreToNearestLabel, step } = useMemo(() => {
+    if (!dropdownOpts?.length)
+      return { labelToScore: {}, scoreToNearestLabel: () => "Select", step: 0 };
+    const step = dropdownOpts.length > 1 ? 10 / (dropdownOpts.length - 1) : 0;
+
+    const l2s = dropdownOpts.reduce((m, lbl, i) => {
+      m[lbl] = i * step;
+      return m;
+    }, {});
+
+    const nearest = (score) => {
+      if (!Number.isFinite(score) || step === 0) return "Select";
+      const idx = Math.min(
+        dropdownOpts.length - 1,
+        Math.max(0, Math.round(score / step))
+      );
+      return dropdownOpts[idx];
+    };
+
+    return { labelToScore: l2s, scoreToNearestLabel: nearest, step };
+  }, [dropdownOpts]);
+
+  // Convert a numeric ML range to a human "label" span using dropdown words
+  const rangeToLabelSpan = (qid, yIdx) => {
+    const r = rangeMap?.[qid]?.[yIdx];
+    if (!r || !dropdownOpts?.length || step <= 0) return null;
+    // Use floor for lo and ceil for hi to cover the numeric interval conservatively
+    const idxLo = Math.max(
+      0,
+      Math.min(dropdownOpts.length - 1, Math.floor(r.lo / step + 1e-9))
+    );
+    const idxHi = Math.max(
+      0,
+      Math.min(dropdownOpts.length - 1, Math.ceil(r.hi / step - 1e-9))
+    );
+    const loLabel = dropdownOpts[Math.min(idxLo, idxHi)];
+    const hiLabel = dropdownOpts[Math.max(idxLo, idxHi)];
+    return loLabel === hiLabel ? loLabel : `${loLabel} – ${hiLabel}`;
+  };
+
+  // In-range tri-state: true/false/null (null = no opinion)
+  const isInMlRange = (qid, yIdx, label) => {
+    if (!mlEnabled) return null;
+    const r = rangeMap?.[qid]?.[yIdx];
+    if (!r) return null;
+    const v = labelToScore[label];
+    if (!Number.isFinite(v)) return null;
+    return v >= r.lo - 1e-6 && v <= r.hi + 1e-6;
+  };
+
+  // Midpoint suggestion → nearest label (used if you keep the suggestions button)
+  const suggestLabel = (qid, yIdx) => {
+    const r = rangeMap?.[qid]?.[yIdx];
+    if (!r) return "Select";
+    return scoreToNearestLabel((r.lo + r.hi) / 2);
+  };
+
+  // Usability flag for status pill
+  const mlUsable = useMemo(
+    () => mlEnabled && Object.keys(rangeMap).length > 0,
+    [mlEnabled, rangeMap]
+  );
+  console.log(rangeMap);
+
+  // 1.5) Decide if ML is enabled: need >= 2 non-skipped submissions
+  useEffect(() => {
+    if (!graphId) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        // Count non-skipped submissions
+        const res = await fetch(
+          `/api/saveScores?graphId=${encodeURIComponent(graphId)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`,
+            },
+            cache: "no-store",
+          }
+        );
+        if (!res.ok) throw new Error(`saveScores GET ${res.status}`);
+        const data = await res.json();
+        const subs = Array.isArray(data?.submissions) ? data.submissions : [];
+        const nonSkippedCount = subs.reduce((acc, sub) => {
+          const hasData = (sub.scores || []).some(
+            (s) =>
+              s &&
+              !s.skipped &&
+              s.score != null &&
+              Number.isFinite(Number(s.score))
+          );
+          return acc + (hasData ? 1 : 0);
+        }, 0);
+
+        if (cancelled) return;
+        const enabled = nonSkippedCount >= 2;
+        setMlEnabled(enabled);
+        if (!enabled) {
+          setRangeMap({});
+          setMlLoaded(true);
+          return;
+        }
+
+        // Fetch ML ranges
+        const r = await fetch(
+          `/api/ml/results?graphId=${encodeURIComponent(graphId)}`,
+          { cache: "no-store" }
+        );
+        if (!r.ok) throw new Error(`ml/results ${r.status}`);
+        const ml = await r.json();
+        console.log("ml data", ml, cancelled);
+        if (cancelled) return;
+        if (!ml.exists || !ml.output?.data) {
+          setRangeMap({});
+        } else {
+          console.log("executed");
+          const map = {};
+          for (const row of ml.output.data) {
+            const qid = Number(row.question_id);
+            const yi = Number(row.year_index);
+            const lo = Number(row.lower_range);
+            const hi = Number(row.upper_range);
+            console.log(!Number.isFinite(lo) || !Number.isFinite(hi));
+            if (!Number.isFinite(lo) || !Number.isFinite(hi)) continue;
+            console.log(hi, lo);
+            if (hi - lo < MIN_RANGE_WIDTH) continue; // too tight -> ignore (no warnings)
+            (map[qid] || (map[qid] = {}))[yi] = { lo, hi };
+          }
+          console.log("map", map);
+          setRangeMap(map);
+        }
+        setMlLoaded(true);
+      } catch (e) {
+        console.error("ML enable/range fetch failed:", e);
+        if (!cancelled) {
+          setMlEnabled(false);
+          setRangeMap({});
+          setMlLoaded(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [graphId]);
+
+  // Helper: compute inline color style + title for each option
+  // Now only returns colors if the *current selection* is out-of-range
+  const getOptionVisuals = (qid, yIdx, optLabel, currentSelectedLabel) => {
+    // Don't style placeholder
+    if (optLabel === "Select") {
+      return { style: { color: "#666" }, title: "Choose a value" };
+    }
+
+    // Must have ML guidance available
+    if (!mlEnabled) return {};
+    const r = rangeMap?.[qid]?.[yIdx];
+    if (!r) return {};
+
+    // If nothing is selected (or "Select"), don't color anything
+    if (!currentSelectedLabel || currentSelectedLabel === "Select") return {};
+
+    // Only colorize options when the *current* selection is out of the range
+    const selScore = labelToScore[currentSelectedLabel];
+    const selectionInRange =
+      Number.isFinite(selScore) &&
+      selScore >= r.lo - 1e-6 &&
+      selScore <= r.hi + 1e-6;
+
+    if (selectionInRange) return {}; // user selection is OK → no colors yet
+
+    // Selection is out-of-range → show in-range options green, others red
+    const v = labelToScore[optLabel];
+    if (!Number.isFinite(v)) return {};
+    const optionInRange = v >= r.lo - 1e-6 && v <= r.hi + 1e-6;
+
+    return {
+      style: { color: optionInRange ? "#18a558" : "#cc3333" },
+      title: optionInRange ? "In suggested range" : "Out of suggested range",
+    };
+  };
+
   // If they somehow navigated here without a graphId, send them back
   if (!graphId) {
     router.replace("/forecast");
@@ -350,6 +543,35 @@ export default function ScoreCard() {
         </div>
       </div>
 
+      {/* ML status row */}
+      <div className="container-fluid mt-2">
+        <div
+          className="d-flex justify-content-center align-items-center"
+          style={{ gap: 8 }}
+        >
+          <Tag color={mlUsable ? "green" : "default"}>
+            ML range guidance: {mlUsable ? "Active" : "Inactive"}
+          </Tag>
+          <Tooltip
+            title={
+              <div style={{ maxWidth: 320, textAlign: "center" }}>
+                <strong>What is this?</strong>
+                <div>
+                  When at least two users have submitted non-skipped scores for
+                  this graph, we compute typical ranges per question/year from
+                  those submissions using MACHINE LEARNING. If you pick a value
+                  outside that range, we’ll show a gentle warning
+                  <em> after you make a selection</em>. We suppress warnings if
+                  the range is too tight.
+                </div>
+              </div>
+            }
+          >
+            <Button size="small" type="text" icon={<InfoCircleOutlined />} />
+          </Tooltip>
+        </div>
+      </div>
+
       {/* Dynamic KEY DRIVERS / KEY BARRIERS Header */}
       <div className="container-fluid mt-3 fw-bold">
         <div
@@ -412,23 +634,82 @@ export default function ScoreCard() {
                           <select
                             key={yIdx}
                             className="form-select fw-bold"
-                            style={{ width: "110px", fontSize: "12px" }}
+                            style={{
+                              width: "110px",
+                              fontSize: "12px",
+                              border: (() => {
+                                const sel = selectedValues[gIdx]?.[yIdx];
+                                if (!sel || sel === "Select" || !mlEnabled)
+                                  return undefined;
+                                const opinion = isInMlRange(item.id, yIdx, sel);
+                                if (opinion === true)
+                                  return "2px solid #18a558"; // in-range (after selection)
+                                if (opinion === false)
+                                  return "2px solid #cc3333"; // out-of-range (after selection)
+                                return undefined; // no ML or too-tight -> no styling
+                              })(),
+                            }}
                             value={selectedValues[gIdx]?.[yIdx] || "Select"}
                             disabled={skipFlags[gIdx]} // ← disable if skipped
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const newLabel = e.target.value;
+
+                              // 1) Keep existing behavior: set selection
                               setSelectedValues((sv) => {
                                 const copy = sv.map((arr) => [...arr]);
-                                copy[gIdx][yIdx] = e.target.value;
+                                copy[gIdx][yIdx] = newLabel;
                                 return copy;
-                              })
-                            }
+                              });
+
+                              // 2) Only after a real selection, if ML is usable, check and maybe warn
+                              if (newLabel !== "Select" && mlEnabled) {
+                                const r = rangeMap?.[item.id]?.[yIdx];
+                                if (r) {
+                                  const v = labelToScore[newLabel];
+                                  const inRange =
+                                    Number.isFinite(v) &&
+                                    v >= r.lo - 1e-6 &&
+                                    v <= r.hi + 1e-6;
+                                  if (!inRange) {
+                                    const key = `${item.id}:${yIdx}`;
+                                    if (!warnedRef.current.has(key)) {
+                                      warnedRef.current.add(key);
+                                      const span =
+                                        rangeToLabelSpan(item.id, yIdx) ||
+                                        "typical range";
+                                      notification.warning({
+                                        message: "Out of suggested range",
+                                        description: `Your selection is outside the typical range: ${span}. You can still proceed.`,
+                                        placement: "topRight",
+                                        duration: 8, // longer visibility
+                                      });
+                                    }
+                                  }
+                                }
+                              }
+                            }}
                           >
-                            <option value="Select">Select</option>
-                            {dropdownOpts.map((opt, oIdx) => (
-                              <option key={oIdx} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
+                            <option value="Select" style={{ color: "#666" }}>
+                              Select
+                            </option>
+                            {dropdownOpts.map((opt, oIdx) => {
+                              const visuals = getOptionVisuals(
+                                item.id,
+                                yIdx,
+                                opt,
+                                selectedValues[gIdx]?.[yIdx]
+                              );
+                              return (
+                                <option
+                                  key={oIdx}
+                                  value={opt}
+                                  style={visuals.style}
+                                  title={visuals.title}
+                                >
+                                  {opt}
+                                </option>
+                              );
+                            })}
                           </select>
                         ))}
                       </div>

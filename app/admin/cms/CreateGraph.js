@@ -13,6 +13,7 @@ import {
   Row,
   Col,
   TreeSelect,
+  Checkbox,
 } from "antd";
 
 export default function CreateGraph() {
@@ -27,6 +28,7 @@ export default function CreateGraph() {
   const [allVolumeDatasets, setAllVolumeDatasets] = useState([]);
   const [filteredDatasets, setFilteredDatasets] = useState([]);
   const [expandedKeys, setExpandedKeys] = useState([]);
+  const [aiEnabled, setAiEnabled] = useState(false); // AI inputs optional
 
   const forecastTypes = [
     { label: "Linear Regression", value: "linear" },
@@ -166,25 +168,39 @@ export default function CreateGraph() {
   const onFinish = useCallback(
     async (values) => {
       try {
+        // Build AI forecast (optional)
         const aiForecast = {};
+        let aiCount = 0;
+        if (values.chartType === "line" && aiEnabled) {
+          for (let y of yearNames) {
+            const v = values[`ai_${y}`];
+            if (v !== undefined && v !== null && v !== "") {
+              aiForecast[y] = v;
+              aiCount++;
+            }
+          }
+        }
+
+        // Build Race forecast (required for line)
         const raceForecast = {};
         if (values.chartType === "line") {
           for (let y of yearNames) {
-            aiForecast[y] = values[`ai_${y}`];
             raceForecast[y] = values[`race_${y}`];
           }
         }
 
-        const payload = {
+        const basePayload = {
           name: values.name,
           description: values.description || "",
           summary: values.summary || "",
           datasetIds: values.datasetId,
           chartType: values.chartType,
           forecastTypes: values.forecastTypes || null,
-          aiForecast,
           raceForecast,
         };
+
+        const payload =
+          aiEnabled && aiCount ? { ...basePayload, aiForecast } : basePayload;
 
         const res = await fetch("/api/graphs", {
           method: "POST",
@@ -201,13 +217,14 @@ export default function CreateGraph() {
         }
 
         const created = await res.json();
-        message.success(`Graph \"${created.name}\" (#${created.id}) created!`);
+        message.success(`Graph "${created.name}" (#${created.id}) created!`);
         form.resetFields();
+        setAiEnabled(false);
       } catch (e) {
         message.error(e.message || "Creation failed");
       }
     },
-    [form, yearNames]
+    [form, yearNames, aiEnabled]
   );
 
   if (loading) {
@@ -220,172 +237,269 @@ export default function CreateGraph() {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: "0 auto", padding: 16 }}>
-      <h2>Create Graph</h2>
+    <div style={{  margin: "0 auto", padding: 16 }}>
+      <h2 style={{ marginBottom: 12 }}>Create Graph</h2>
+
       <Form
         form={form}
         layout="vertical"
         onFinish={onFinish}
         initialValues={{ chartType: "line" }}
+        style={{}}
       >
-        <Form.Item
-          name="name"
-          label="Graph Name"
-          rules={[{ required: true, message: "Please enter a graph name" }]}
-        >
-          <Input placeholder="e.g. Sales Trend 2020–2025" />
-        </Form.Item>
+        <Row gutter={[16, 16]}>
+          {/* ───────────────── Left Column: Meta & Filters ───────────────── */}
+          <Col xs={24} lg={10} xl={12}>
+            <Form.Item
+              name="name"
+              label="Graph Name"
+              rules={[{ required: true, message: "Please enter a graph name" }]}
+              style={{ marginBottom: 12 }}
+            >
+              <Input placeholder="e.g. Sales Trend 2020–2025" allowClear />
+            </Form.Item>
 
-        <Form.Item name="summary" label="Summary (30 words)">
-          <Input.TextArea rows={2} placeholder="Add a brief summary..." />
-        </Form.Item>
+            <Form.Item
+              name="summary"
+              label="Summary (30 words)"
+              style={{ marginBottom: 12 }}
+            >
+              <Input.TextArea
+                rows={2}
+                placeholder="Add a brief summary..."
+                allowClear
+              />
+            </Form.Item>
 
-        <Form.Item name="description" label="Description (300 words)">
-          <Input.TextArea rows={5} placeholder="Add a short description..." />
-        </Form.Item>
+            <Form.Item
+              name="description"
+              label="Description (300 words)"
+              style={{ marginBottom: 12 }}
+            >
+              <Input.TextArea
+                rows={5}
+                placeholder="Add a short description..."
+                allowClear
+              />
+            </Form.Item>
 
-        <Form.Item label="Historical Dataset Filter">
-          <TreeSelect
-            style={{ width: "100%" }}
-            value={selectedStreamPath[selectedStreamPath.length - 1] || null}
-            dropdownStyle={{ maxHeight: 400, overflow: "auto" }}
-            treeData={treeData}
-            placeholder="Select stream"
-            onChange={(val) => {
-              const path = [];
-              let current = contentHierarchy.find(
-                (n) => n.id.toString() === val
-              );
-
-              while (current) {
-                path.unshift(current.id.toString());
-                current = contentHierarchy.find(
-                  (n) => n.id === current.parent_id
-                );
-              }
-
-              setSelectedStreamPath(path);
-            }}
-            treeExpandedKeys={expandedKeys}
-            onTreeExpand={(keys) => setExpandedKeys(keys)}
-            showSearch
-            allowClear
-          />
-        </Form.Item>
-
-        <Form.Item
-          name="datasetId"
-          label="Historical Dataset"
-          rules={[{ required: true, message: "Select a dataset" }]}
-        >
-          <Select
-            placeholder="Choose a dataset"
-            options={filteredDatasetOptions}
-            allowClear
-          />
-        </Form.Item>
-
-        <Form.Item
-          name="chartType"
-          label="Chart Type"
-          rules={[{ required: true, message: "Select a chart type" }]}
-        >
-          <Select
-            placeholder="Select chart visualization"
-            options={chartTypes}
-          />
-        </Form.Item>
-
-        <Form.Item
-          noStyle
-          shouldUpdate={(prev, curr) => prev.chartType !== curr.chartType}
-        >
-          {({ getFieldValue }) =>
-            getFieldValue("chartType") === "line" ? (
-              <>
+            {/* Stream filter + Dataset in a row */}
+            <Row gutter={8}>
+              <Col span={12}>
                 <Form.Item
-                  name="forecastTypes"
-                  label="Forecast Methods"
-                  rules={[
-                    { required: true, message: "Select forecasting methods" },
-                  ]}
+                  label="Historical Dataset Filter"
+                  style={{ marginBottom: 12 }}
                 >
-                  <Select
-                    mode="multiple"
-                    placeholder="Select forecasting methods"
-                    options={forecastTypes}
+                  <TreeSelect
+                    style={{ width: "100%" }}
+                    value={
+                      selectedStreamPath[selectedStreamPath.length - 1] || null
+                    }
+                    dropdownStyle={{ maxHeight: 400, overflow: "auto" }}
+                    treeData={treeData}
+                    placeholder="Select stream"
+                    onChange={(val) => {
+                      const path = [];
+                      let current = contentHierarchy.find(
+                        (n) => n.id.toString() === val
+                      );
+                      while (current) {
+                        path.unshift(current.id.toString());
+                        current = contentHierarchy.find(
+                          (n) => n.id === current.parent_id
+                        );
+                      }
+                      setSelectedStreamPath(path);
+                    }}
+                    treeExpandedKeys={expandedKeys}
+                    onTreeExpand={(keys) => setExpandedKeys(keys)}
+                    showSearch
                     allowClear
                   />
                 </Form.Item>
-
-                {/* ─── AI Forecast Volume ───────────────────────────── */}
-                <Form.Item label="AI Forecast Volume" required>
-                  <Row gutter={[12, 12]}>
-                    {yearNames.map((year) => (
-                      <Col
-                        key={`ai_${year}`}
-                        span={24 / Math.min(5, yearNames.length)}
-                      >
-                        <Form.Item
-                          name={`ai_${year}`}
-                          label={year}
-                          labelCol={{ span: 24 }}
-                          wrapperCol={{ span: 24 }}
-                          rules={[
-                            {
-                              required: true,
-                              message: `Enter AI forecast for ${year}`,
-                            },
-                          ]}
-                          style={{ marginBottom: 0 }}
-                        >
-                          <InputNumber min={0} style={{ width: "100%" }} />
-                        </Form.Item>
-                      </Col>
-                    ))}
-                  </Row>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="datasetId"
+                  label="Historical Dataset"
+                  rules={[{ required: true, message: "Select a dataset" }]}
+                  style={{ marginBottom: 12 }}
+                >
+                  <Select
+                    placeholder="Choose a dataset"
+                    options={filteredDatasetOptions}
+                    allowClear
+                    showSearch
+                  />
                 </Form.Item>
+              </Col>
+            </Row>
 
-                {/* ─── Race Insights Forecast Volume ───────────────── */}
-                <Form.Item label="Race Insights Forecast Volume" required>
-                  <Row gutter={[12, 12]}>
-                    {yearNames.map((year) => (
-                      <Col
-                        key={`race_${year}`}
-                        span={24 / Math.min(5, yearNames.length)}
-                      >
-                        <Form.Item
-                          name={`race_${year}`}
-                          label={year}
-                          labelCol={{ span: 24 }}
-                          wrapperCol={{ span: 24 }}
-                          rules={[
-                            {
-                              required: true,
-                              message: `Enter Race forecast for ${year}`,
-                            },
-                          ]}
-                          style={{ marginBottom: 0 }}
-                        >
-                          <InputNumber min={0} style={{ width: "100%" }} />
-                        </Form.Item>
-                      </Col>
-                    ))}
-                  </Row>
+            {/* Chart type + Forecast methods in a row */}
+            <Row gutter={8}>
+              <Col span={12}>
+                <Form.Item
+                  name="chartType"
+                  label="Chart Type"
+                  rules={[{ required: true, message: "Select a chart type" }]}
+                  style={{ marginBottom: 12 }}
+                >
+                  <Select
+                    placeholder="Select visualization"
+                    options={chartTypes}
+                  />
                 </Form.Item>
-              </>
-            ) : null
-          }
-        </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  noStyle
+                  shouldUpdate={(prev, curr) =>
+                    prev.chartType !== curr.chartType
+                  }
+                >
+                  {({ getFieldValue }) =>
+                    getFieldValue("chartType") === "line" ? (
+                      <Form.Item
+                        name="forecastTypes"
+                        label="Forecast Methods"
+                        rules={[
+                          {
+                            required: true,
+                            message: "Select forecasting methods",
+                          },
+                        ]}
+                        style={{ marginBottom: 12 }}
+                      >
+                        <Select
+                          mode="multiple"
+                          placeholder="Select methods"
+                          options={forecastTypes}
+                          allowClear
+                        />
+                      </Form.Item>
+                    ) : (
+                      <div />
+                    )
+                  }
+                </Form.Item>
+              </Col>
+            </Row>
+          </Col>
 
-        <Form.Item>
-          <Space>
-            <Button type="primary" htmlType="submit">
-              Create Graph
-            </Button>
-            <Button onClick={() => form.resetFields()}>Reset</Button>
-          </Space>
-        </Form.Item>
+          {/* ──────────────── Right Column: Forecast Inputs ──────────────── */}
+          <Col xs={24} lg={10} xl={12}>
+            <Form.Item
+              noStyle
+              shouldUpdate={(prev, curr) => prev.chartType !== curr.chartType}
+            >
+              {({ getFieldValue }) =>
+                getFieldValue("chartType") === "line" ? (
+                  <>
+                    {/* AI toggle (optional) */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <strong>AI Forecast Volume</strong>
+                      <Checkbox
+                        checked={aiEnabled}
+                        onChange={(e) => setAiEnabled(e.target.checked)}
+                      >
+                        Provide AI forecast (optional)
+                      </Checkbox>
+                    </div>
+
+                    {aiEnabled && (
+                      <div style={{ marginBottom: 12 }}>
+                        <Row gutter={[8, 8]}>
+                          {yearNames.map((year) => (
+                            <Col
+                              key={`ai_${year}`}
+                              xs={12}
+                              sm={8}
+                              md={6}
+                              lg={6}
+                              xl={6} // responsive grid: 2–4 per row
+                            >
+                              <Form.Item
+                                name={`ai_${year}`}
+                                label={year}
+                                labelCol={{ span: 24 }}
+                                wrapperCol={{ span: 24 }}
+                                // No "required" rule -> optional
+                                style={{ marginBottom: 0 }}
+                              >
+                                <InputNumber
+                                  min={0}
+                                  style={{ width: "100%" }}
+                                />
+                              </Form.Item>
+                            </Col>
+                          ))}
+                        </Row>
+                      </div>
+                    )}
+
+                    {/* Race Insights (required) */}
+                    <div style={{ marginTop: 4, marginBottom: 8 }}>
+                      <strong>Race Insights Forecast Volume</strong>
+                    </div>
+                    <div>
+                      <Row gutter={[8, 8]}>
+                        {yearNames.map((year) => (
+                          <Col
+                            key={`race_${year}`}
+                            xs={12}
+                            sm={8}
+                            md={6}
+                            lg={6}
+                            xl={6} // responsive grid: 2–4 per row
+                          >
+                            <Form.Item
+                              name={`race_${year}`}
+                              label={year}
+                              labelCol={{ span: 24 }}
+                              wrapperCol={{ span: 24 }}
+                              rules={[
+                                {
+                                  required: true,
+                                  message: `Enter Race forecast for ${year}`,
+                                },
+                              ]}
+                              style={{ marginBottom: 0 }}
+                            >
+                              <InputNumber min={0} style={{ width: "100%" }} />
+                            </Form.Item>
+                          </Col>
+                        ))}
+                      </Row>
+                    </div>
+                  </>
+                ) : null
+              }
+            </Form.Item>
+
+            <Form.Item style={{ marginTop: 16 }}>
+              <Space wrap>
+                <Button type="primary" htmlType="submit">
+                  Create Graph
+                </Button>
+                <Button
+                  onClick={() => {
+                    form.resetFields();
+                    setAiEnabled(false);
+                  }}
+                >
+                  Reset
+                </Button>
+              </Space>
+            </Form.Item>
+          </Col>
+        </Row>
       </Form>
     </div>
   );

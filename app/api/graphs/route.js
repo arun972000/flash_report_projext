@@ -51,14 +51,31 @@ export async function POST(req) {
       );
     }
 
-    if (chartType === "line" && (!aiForecast || !raceForecast)) {
+    // For line charts: Race forecast is required; AI is optional
+    if (chartType === "line" && !raceForecast) {
       return new Response(
         JSON.stringify({
-          error: "AI and Race forecast data are required for line chart",
+          error: "Race forecast data is required for line chart",
         }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
+
+    // Normalize shapes
+    const datasetIdsArr = Array.isArray(datasetIds)
+      ? datasetIds
+      : [datasetIds].filter(Boolean);
+    const forecastTypesArr = Array.isArray(forecastTypes) ? forecastTypes : [];
+
+    // Only persist AI if it has keys
+    const aiJson =
+      aiForecast && Object.keys(aiForecast).length > 0
+        ? JSON.stringify(aiForecast)
+        : null;
+    const raceJson =
+      raceForecast && Object.keys(raceForecast).length > 0
+        ? JSON.stringify(raceForecast)
+        : null;
 
     const [result] = await pool.query(
       `INSERT INTO graphs 
@@ -68,11 +85,11 @@ export async function POST(req) {
         name,
         description || null,
         summary || null,
-        JSON.stringify(datasetIds),
-        JSON.stringify(forecastTypes || []),
+        JSON.stringify(datasetIdsArr),
+        JSON.stringify(forecastTypesArr),
         chartType,
-        aiForecast ? JSON.stringify(aiForecast) : null,
-        raceForecast ? JSON.stringify(raceForecast) : null,
+        aiJson,
+        raceJson,
       ]
     );
 
