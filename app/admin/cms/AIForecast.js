@@ -20,7 +20,7 @@ import {
   Progress,
 } from "antd";
 import { useAIForecast } from "../../hooks/useAIForecast";
-import { useAIFORMatter } from "../../hooks/useAIFORMatter";
+import { useAIFORMatter } from "../../hooks/useAIFORMATTER";
 import { formatGraphForAI } from "../../utils/formatGraphForAI";
 
 const { TextArea } = Input;
