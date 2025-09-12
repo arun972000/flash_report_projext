@@ -2,11 +2,9 @@
 import React from 'react'
 // import LineChartWithTotal from '../charts/LineCharts'
 import LineChartWithTotal from '../charts/NewTestLineChartv2'
-import RechartsChart from '../charts/customizechart'
 // import DummyBarChart from '../charts/DummyBarChart'
 import DummyBarChart from '../charts/Barchart/AlternateChart'
 import './category.css'
-import OverAllLineChart from '../charts/LineChart/LineChart'
 
 async function transformOverallChartData() {
   const token = "your-very-strong-random-string-here";
