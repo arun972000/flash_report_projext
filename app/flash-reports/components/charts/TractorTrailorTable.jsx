@@ -1,7 +1,7 @@
 'use client'
 import React, { useState } from 'react';
 
-const PASSCODE = 'Tractor-trailer-Flash@2025&';
+const PASSCODE = 'Tractor-trailer-Flash@2025';
 
 const TractorTrailerForecast = () => {
     const [entered, setEntered] = useState('');
@@ -100,7 +100,7 @@ const TractorTrailerForecast = () => {
 };
 
 const SalesTable = () => {
-    const startMonth = 6; // July
+    const startMonth = 8; // July
     const baseDate = new Date(2025, startMonth, 1); // July 2025
     const months = Array.from({ length: 7 }, (_, i) => {
         const date = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, 1);
@@ -108,7 +108,7 @@ const SalesTable = () => {
     });
 
     const data = {
-        'Total Sales': [2281, 2355, 2866, 3482, 3612, 2155, 2299]
+        'Total Sales': [4236, 4352, 4462, 4125, 4332, 4066, 4458]
     };
 
     return (
