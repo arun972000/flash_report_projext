@@ -20,8 +20,8 @@ export default function AuthModal({ show, onClose }) {
             <CloseButton onClick={onClose} />
           </div>
         )}
-{/* 
-        <CloseButton onClick={onClose} /> */}
+{/* { 
+        <CloseButton onClick={onClose} /> } */}
         <div className="d-flex justify-content-center mb-3 ">
           <div className="btn-group me-3" role="group" >
             <button

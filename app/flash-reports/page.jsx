@@ -5,6 +5,8 @@ import FlashReportsHome from './components/home'
 import ReportsFooter from './components/Footer'
 import { Bricolage_Grotesque } from "next/font/google";
 import BottomMenuBar from './components/BottomMenu'
+import 'bootstrap/dist/css/bootstrap.css';
+import './globals.css';
 
 const bricolage = Bricolage_Grotesque({
     subsets: ["latin"],

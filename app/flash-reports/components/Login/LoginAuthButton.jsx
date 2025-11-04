@@ -47,38 +47,91 @@ const LoginNavButton = () => {
         <button
           className="nav-btn ms-auto"
           onClick={handleLogout}
+          // keep inline color if you want the red look for logout
           style={{ cursor: "pointer", backgroundColor: "#cc2936", color: "#fff" }}
         >
           Logout
         </button>
       )}
 
+      {/* --- Updated styles (matches your Dark/Glow button aesthetic) --- */}
       <style>
-        {`.nav-btn {
+        {`
+        .nav-btn {
+          --btn-bg: rgba(255,255,255,0.08);
+          --btn-border: rgba(255,255,255,0.12);
+          --btn-text: rgba(255,255,255,0.92);
+          --btn-hover-bg: rgba(255,255,255,0.12);
+          --btn-hover-border: rgba(255,255,255,0.20);
+
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          background: #1F2023;
-          color: #15AFE4;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-          border: none;
-          padding: 8px 16px;
-          border-radius: 8px;
-          font-size: 0.875rem;
-          font-weight: 500;
+          gap: 8px;
+          padding: 10px 16px;
+          border-radius: 12px;
+          border: 1px solid var(--btn-border);
+          background: var(--btn-bg);
+          color: var(--btn-text);
+          font-size: 14px;
+          font-weight: 600;
+          letter-spacing: 0.01em;
+          backdrop-filter: blur(6px);
+
+          /* Subtle hairline + depth (like your ring effect) */
+          box-shadow:
+            inset 0 0 0 1px rgba(47,57,73,0.40),
+            0 12px 30px rgba(17,24,39,0.35);
+
           transition:
-            background 300ms ease-in-out,
-            color 300ms ease-in-out,
-            box-shadow 300ms ease-in-out,
-            transform 200ms ease-in-out;
+            background 200ms ease,
+            border-color 200ms ease,
+            color 200ms ease,
+            box-shadow 200ms ease,
+            transform 150ms ease;
         }
 
         .nav-btn:hover {
-          background: linear-gradient(135deg, var(--accent), var(--surface));
+          background: var(--btn-hover-bg);
+          border-color: var(--btn-hover-border);
           color: #fff;
-          box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-          transform: translateY(-2px);
-        }`}
+          transform: translateY(-1px);
+          box-shadow:
+            inset 0 0 0 1px rgba(47,57,73,0.48),
+            0 18px 40px rgba(30,64,175,0.35);
+        }
+
+        .nav-btn:focus-visible {
+          outline: none;
+          /* focus ring to match your theme */
+          box-shadow:
+            0 0 0 2px rgba(59,130,246,0.60),
+            inset 0 0 0 1px rgba(255,255,255,0.15);
+        }
+
+        .nav-btn:active {
+          transform: translateY(0);
+          box-shadow:
+            inset 0 0 0 1px rgba(47,57,73,0.50),
+            0 8px 18px rgba(0,0,0,0.35);
+        }
+
+        /* Optional: if you decide to remove the inline style on Logout,
+           add class="nav-btn nav-btn--danger" and use this look instead. */
+        .nav-btn--danger {
+          background: #cc2936;
+          color: #fff;
+          border-color: rgba(255,255,255,0.12);
+          box-shadow:
+            inset 0 0 0 1px rgba(47,57,73,0.35),
+            0 14px 34px rgba(204,41,54,0.35);
+        }
+        .nav-btn--danger:hover {
+          background: #d63542;
+          box-shadow:
+            inset 0 0 0 1px rgba(47,57,73,0.45),
+            0 20px 44px rgba(204,41,54,0.45);
+        }
+        `}
       </style>
     </>
   );
