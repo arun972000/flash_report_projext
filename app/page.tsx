@@ -12,13 +12,13 @@ import Footer from "@/app/components/Footer";
 export default function Page() {
   return (
     <>
-     <BannerHome />
-    <MarketKPIGrid />
-     <VehicleCategorySalesCard />
+      <BannerHome />
+      {/* <MarketKPIGrid /> */}
+      <VehicleCategorySalesCard />
       <IndustryCategories />
-      <OEMLeaderboardAndSegments />
-      <ForecastPreview />
-     <KeyMarketInsights />
+      {/* <OEMLeaderboardAndSegments /> */}
+      {/* <ForecastPreview /> */}
+      <KeyMarketInsights />
       <ExploreToolsInsights />
       <Footer />
     </>

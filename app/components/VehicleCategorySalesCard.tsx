@@ -88,7 +88,7 @@ const CrossCategoryPerformance: React.FC = () => {
                   tickLine={false}
                   tickMargin={8}
                 />
-                <Tooltip cursor={{ fill: "rgba(255,255,255,.03)" }} content={<CardTooltip />} />
+                {/* <Tooltip cursor={{ fill: "rgba(255,255,255,.03)" }} content={<CardTooltip />} /> */}
                 <Bar dataKey="value" barSize={24} radius={[8, 8, 0, 0]}>
                   {chartData.map((d, i) => (
                     <Cell key={i} fill={d.color} />

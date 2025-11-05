@@ -15,12 +15,12 @@ import NavBar from "./Navbar";
 
 /* sample data */
 const data = [
-  { month: "July 2025", actual: 205_000, forecast: 205_000 },
-  { month: "August 2025", actual: 198_500, forecast: 200_000 },
-  { month: "September 2025", actual: 201_400, forecast: 206_000 },
-  { month: "October 2025", actual: 194_200, forecast: 203_500 },
-  { month: "November 2025", actual: 198_900, forecast: 209_000 },
-  { month: "December 2025", actual: 200_600, forecast: 210_500 },
+  { month: "July ", actual: 205_000, forecast: 205_000 },
+  { month: "August ", actual: 198_500, forecast: 200_000 },
+  { month: "September ", actual: 201_400, forecast: 206_000 },
+  { month: "October ", actual: 194_200, forecast: 203_500 },
+  // { month: "November 2025", actual: 198_900, forecast: 209_000 },
+  // { month: "December 2025", actual: 200_600, forecast: 210_500 },
 ];
 
 /* small UI helpers */
@@ -136,15 +136,15 @@ export default function LandingHero() {
                     <CartesianGrid strokeOpacity={0.15} strokeDasharray="3 3" />
                     <XAxis dataKey="month" tick={{ fill: "#c7d2fe" }} tickMargin={10} axisLine={false} tickLine={false} />
                     <YAxis
-                      width={72}
-                      tick={{ fill: "#c7d2fe" }}
+                      // width={72}
+                      tick={false}
                       tickMargin={12}
                       axisLine={false}
                       tickLine={false}
                       domain={[160000, 225000]}
                       tickFormatter={(v) => v.toLocaleString()}
                     />
-                    <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#94a3b8", strokeOpacity: 0.25 }} />
+                    {/* <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#94a3b8", strokeOpacity: 0.25 }} /> */}
                     <Line type="monotone" dataKey="actual" stroke="#60a5fa" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 4 }} />
                     <Line type="monotone" dataKey="forecast" stroke="#22d3ee" strokeDasharray="4 4" strokeWidth={3} dot={false} />
                   </RLineChart>
