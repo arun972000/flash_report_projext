@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// ⬇️ Add this
+export const dynamic = "force-dynamic";
+
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);

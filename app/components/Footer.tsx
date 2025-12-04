@@ -51,12 +51,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link
+                {/* <Link
                   href="/forecast"
                   className="hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 rounded"
                 >
                    Forecast 
-                </Link>
+                </Link> */}
               </li>
               {/* <li>
                 <Link

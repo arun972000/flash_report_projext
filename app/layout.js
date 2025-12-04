@@ -1,11 +1,12 @@
 import "antd/dist/reset.css";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "./globals.css"; 
-
+// import "bootstrap/dist/css/bootstrap.min.css";
+import "./globals.css";
 
 import { Inter } from "next/font/google";
-import BootstrapClient from "./BootstrapClient";
+// import BootstrapClient from "./BootstrapClient";
 import { AuthModalProvider } from "@/utils/AuthModalcontext";
+import { Providers } from "@/components/providers/Providers";
+import { Suspense } from "react"; // ⬅️ add this
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,8 +24,12 @@ export default function RootLayout({ children }) {
     <html lang="en">
       {/* keep body simple; no inline style strings that mix CSS vars */}
       <body className={`${inter.className} ${inter.variable} antialiased`}>
-        <BootstrapClient />
-        <AuthModalProvider>{children}</AuthModalProvider>
+        <Suspense fallback={null}>
+          <Providers>
+            {/* <BootstrapClient /> */}
+            <AuthModalProvider>{children}</AuthModalProvider>
+          </Providers>
+        </Suspense>
       </body>
     </html>
   );

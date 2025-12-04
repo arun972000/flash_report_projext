@@ -7,7 +7,7 @@ import FormatHierarchyFlow from './FormatHierarchyFlow';
 import FilterData from './FilterData';
 import UploadVolumeData from './UploadVolumeData';
 import ManageQuestions from './ManageQuestions';
-import VehicleSalesScoreApp from './VehicleSalesScoreApp';
+// import VehicleSalesScoreApp from './VehicleSalesScoreApp';
 import YearDropdownSettings from './YearDropdownSettings';
 import CreateGraph from './CreateGraph';
 import GraphList from './GraphList';
@@ -62,8 +62,8 @@ export default function Home() {
   ];
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Forecast Application CMS</h1>
+    <div className='min-h-screen' style={{ padding: '2rem' ,backgroundColor:'white'}}>
+      <h1 className='text-2xl font-bold text-black '>Raceautoanalytics Application CMS</h1>
       <Tabs defaultActiveKey="historical" items={tabItems} />
     </div>
   );

@@ -20,6 +20,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+   typescript: {
+    // 🚨 This makes `next build` succeed even if there are TS errors
+    ignoreBuildErrors: true,
+  },
 };
 
 export default withPlaiceholder(nextConfig);

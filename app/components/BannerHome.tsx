@@ -110,9 +110,9 @@ export default function LandingHero() {
               <PillButton href="/flash-reports">
                 <span>View Flash Reports</span>
               </PillButton>
-              <GhostButton href="/forecast">
+              {/* <GhostButton href="/forecast">
                 <span>Go to Forecast</span>
-              </GhostButton>
+              </GhostButton> */}
             </div>
             <div className="mt-8 text-sm text-white/50">
               <span className="font-medium text-white/70">Note:</span> This module links to your existing RaceAutoAnalytics project.
@@ -132,7 +132,7 @@ export default function LandingHero() {
 
               <div className="h-72 w-full overflow-visible">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RLineChart data={data} margin={{ top: 16, right: 24, left: 80, bottom: 24 }}>
+                  <RLineChart data={data} margin={{ top: 16, right: 24, left: 1, bottom: 24 }}>
                     <CartesianGrid strokeOpacity={0.15} strokeDasharray="3 3" />
                     <XAxis dataKey="month" tick={{ fill: "#c7d2fe" }} tickMargin={10} axisLine={false} tickLine={false} />
                     <YAxis
