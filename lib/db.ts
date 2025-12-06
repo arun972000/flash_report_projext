@@ -2,10 +2,10 @@ import mysql from "mysql2/promise";
 
 // Create the connection to database
 const db = mysql.createPool({
-  host: "localhost",
-  user: "race_user",
-  database: "production_forecast",
-  password: "race@123",
+  host:process.env.DB_HOST,
+  user:  process.env.DB_USER,
+  database:  process.env.DB_NAME,
+  password:  process.env.DB_PASSWORD,
   waitForConnections: true,
   connectionLimit: 500,
   maxIdle: 10, // max idle connections, the default value is the same as `connectionLimit`

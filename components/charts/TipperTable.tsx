@@ -115,12 +115,13 @@ const TipperTable = () => {
 };
 
 const TipperSalesChart = () => {
-  const startMonthIndex = 6; // July (0-based index)
+  // Jan 2025 → Apr 2026
+  const startMonthIndex = 0; // January (0-based)
   const baseDate = new Date(2025, startMonthIndex, 1);
 
   const months = useMemo(
     () =>
-      Array.from({ length: 7 }, (_, i) => {
+      Array.from({ length: 16 }, (_, i) => {
         const date = new Date(
           baseDate.getFullYear(),
           baseDate.getMonth() + i,
@@ -143,7 +144,13 @@ const TipperSalesChart = () => {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const values = [4297, 5201, 5652, 6070, 5607, 5668, 6323];
+  // Jan 2025 → Apr 2026 (16 values)
+  const values = [
+    5971, 4744, 5615, 6006,
+    4898, 4381, 4275, 4183,
+    4297, 6039, 5963, 5866,
+    5607, 5034, 6323, 4070,
+  ];
 
   const data = months.map((label, idx) => ({
     month: label,
@@ -181,7 +188,6 @@ const TipperSalesChart = () => {
             tickFormatter={(val) => val.toLocaleString()}
             width={isMobile ? 40 : 60}
           />
-
           <Tooltip
             contentStyle={{
               backgroundColor: "#1f1f1f",

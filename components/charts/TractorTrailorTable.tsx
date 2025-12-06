@@ -116,7 +116,8 @@ const TractorTrailerForecast = () => {
 };
 
 const TractorTrailerSalesChart = () => {
-  const startMonthIndex = 6; // July
+  // Apr 2025 → Mar 2026
+  const startMonthIndex = 3; // April (0-based)
   const baseDate = new Date(2025, startMonthIndex, 1);
 
   const [isMobile, setIsMobile] = useState(false);
@@ -131,7 +132,7 @@ const TractorTrailerSalesChart = () => {
 
   const months = useMemo(
     () =>
-      Array.from({ length: 7 }, (_, i) => {
+      Array.from({ length: 12 }, (_, i) => {
         const date = new Date(
           baseDate.getFullYear(),
           baseDate.getMonth() + i,
@@ -144,7 +145,12 @@ const TractorTrailerSalesChart = () => {
     []
   );
 
-  const values = [4236, 4352, 4462, 4125, 4332, 4066, 4458];
+  // Apr 2025 → Mar 2026 (12 values)
+  const values = [
+    4185, 4256, 3988, 4362,
+    4122, 4236, 4352, 4462,
+    4125, 4332, 4066, 4458,
+  ];
 
   const data = months.map((label, idx) => ({
     month: label,
